@@ -39,25 +39,25 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
     local entAng = traveller:EyeAngles()
     local entVel = traveller:GetVelocity()
 
-    -- Transform position/angle/velocity into entrance local space
+    -- Transform position relative to entrance
     local relPos = WorldToLocal(entPos, Angle(), entrance:GetPos(), entrance:GetAngles())
-    local relAng = entAng - entrance:GetAngles()
-    local relVel = RotateVectorByAngle(entVel, AngleInverse(entrance:GetAngles()))
-
-    -- Convert to world space from exit's orientation
-    local entranceAngles = entrance:GetAngles()
-    local exitAngles = exit:GetAngles()
-    local localForward = RotateVectorByAngle(entAng:Forward(), AngleInverse(entranceAngles))
-    local exitForward = RotateVectorByAngle(localForward, exitAngles)
     local newPos = LocalToWorld(relPos, Angle(), exit:GetPos(), exit:GetAngles())
-    local newAng = exitForward:Angle()
-    local newVel = RotateVectorByAngle(relVel, exit:GetAngles())
 
+    -- Transform velocity relative to entrance into local space
+    local localVel = WorldToLocal(entVel, Angle(), Vector(0, 0, 0), entrance:GetAngles())
+    local newVel = LocalToWorld(localVel, Angle(), Vector(0, 0, 0), exit:GetAngles())
+
+    -- Transform view direction properly (avoid pitch inversion)
+    local localForward = WorldToLocal(entAng:Forward(), Angle(), Vector(0, 0, 0), entrance:GetAngles())
+    local exitForward = LocalToWorld(localForward, Angle(), Vector(0, 0, 0), exit:GetAngles())
+    local newAng = exitForward:Angle()
+
+    -- Apply teleport
     traveller:SetPos(newPos)
 
     if traveller:IsPlayer() then
         traveller:SetEyeAngles(newAng)
-        traveller:SetVelocity(-traveller:GetVelocity()) -- Cancel current movement
+        traveller:SetVelocity(-traveller:GetVelocity()) -- Cancel movement
         traveller:SetVelocity(newVel)
     else
         traveller:SetAngles(newAng)
