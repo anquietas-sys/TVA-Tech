@@ -78,7 +78,7 @@ function ENT:OnPlayerPass(ply)
 
     if CurTime() >= ply.TimeDoorCooldown then
         // Player is entering time door
-        ply.TimeDoorCooldown = CurTime() + 1
+        ply.TimeDoorCooldown = CurTime() + 0.1
         TeleportFunctions.Teleport(ply, self, self.Partner)
     end
 end
@@ -93,7 +93,7 @@ function ENT:OnSmallPropPass(prop)
 
     if CurTime() >= prop.TimeDoorCooldown then
         // Player is entering time door
-        prop.TimeDoorCooldown = CurTime() + 1
+        prop.TimeDoorCooldown = CurTime() + 0.1
         TeleportFunctions.Teleport(prop, self, self.Partner)
     end
 end
