@@ -1,6 +1,6 @@
 local config = {} // Don't Touch
 
-config.Blacklist = { // 
+config.Blacklist = {
     "func_door" = true,
     "func_door_rotating" = true,
     

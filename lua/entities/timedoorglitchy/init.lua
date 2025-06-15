@@ -7,6 +7,8 @@ local config = include("tempad/config.lua")
 
 function ENT:Initialize()
     self:SetModel("models/timedoor/timedoor.mdl")
+    self:SetRenderFX(15)
+    self:SetColor(Color(255, 198, 114, 255))
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
@@ -86,7 +88,7 @@ end
 
 function ENT:OnSmallPropPass(prop)
   //  print("A small prop passed through a Time Door: " .. tostring(prop))
-    SoundScripts.PlayTravelSound(self:GetPos())
+    SoundScripts.PlayGlitchyTravelSound(self:GetPos())
 
     if prop.TimeDoorCooldown == nil then
         prop.TimeDoorCooldown = CurTime()
@@ -107,7 +109,7 @@ function ENT:OpenDoor()
     self:SetSequence(seq)
 
     -- Play open sound
-    SoundScripts.PlayOpenSound(self:GetPos())
+    SoundScripts.PlayGlitchyOpenSound(self:GetPos())
 
     self.Open = true
 
@@ -128,7 +130,7 @@ function ENT:CloseDoor(toRemove)
     self:SetSequence(seq)
 
     -- Play open sound
-    SoundScripts.PlayCloseSound(self:GetPos())
+    SoundScripts.PlayGlitchyCloseSound(self:GetPos())
 
     self.Open = false
 
