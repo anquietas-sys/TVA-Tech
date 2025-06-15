@@ -7,7 +7,7 @@ end
 
 -- Rotates a local-space vector into world-space using the angle's basis
 local function RotateVectorByAngle(vec, ang)
-    return ang:Forward() * vec.x + ang:Right() * vec.y + ang:Up() * vec.z
+    return ang:Forward() * vec.x + -ang:Right() * vec.y + ang:Up() * vec.z
 end
 
 local function TransformToLocalSpace(pos, ang, origin, basisAng)

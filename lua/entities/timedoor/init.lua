@@ -70,7 +70,7 @@ function ENT:StartTouch(ent)
 end
 
 function ENT:OnPlayerPass(ply)
-    print(ply:Nick() .. " entered a Time Door.")
+  //  print(ply:Nick() .. " entered a Time Door.")
     SoundScripts.PlayTravelSound(self:GetPos())
 
     if ply.TimeDoorCooldown == nil then
@@ -85,7 +85,7 @@ function ENT:OnPlayerPass(ply)
 end
 
 function ENT:OnSmallPropPass(prop)
-    print("A small prop passed through a Time Door: " .. tostring(prop))
+  //  print("A small prop passed through a Time Door: " .. tostring(prop))
     SoundScripts.PlayTravelSound(self:GetPos())
 
     if prop.TimeDoorCooldown == nil then
