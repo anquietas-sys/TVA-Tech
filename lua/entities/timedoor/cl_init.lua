@@ -5,18 +5,17 @@ function ENT:Draw()
 end
 
 net.Receive("Timedoor_PlayOpenAnim", function()
+    LocalPlayer():ChatPrint("CL: NETWORK MESSAGE")
     local ent = net.ReadEntity()
     if not IsValid(ent) then return end
 
     ent:SetNoDraw(false) -- show the door
 
     local seq = ent:LookupSequence("open")
-    if seq and seq >= 0 then
+    if IsValid(seq) then
         ent:ResetSequence(seq)
         ent:SetCycle(0)
         ent:SetPlaybackRate(1)
-        ent.AutomaticFrameAdvance = true
-
         ent._IsPlayingOpenAnim = true -- flag for tracking
     else
         print("Timedoor: 'open' animation not found on client!")
