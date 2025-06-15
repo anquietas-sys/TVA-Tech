@@ -30,6 +30,7 @@ function ENT:Initialize()
     if !self.Open then
         self:OpenDoor()
     end
+
 end
 
 function ENT:Use()

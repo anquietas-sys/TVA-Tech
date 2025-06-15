@@ -44,6 +44,19 @@ function ENT:Think()
         end
     end
 
+    local dlight = DynamicLight(self:EntIndex())
+
+    if dlight then
+        dlight.pos = self:GetPos() + self:GetUp() * 35
+        dlight.r = 255
+        dlight.g = 254
+        dlight.b = 171
+        dlight.brightness = 3
+        dlight.Decay = 512
+        dlight.Size = 128
+        dlight.DieTime = CurTime() + 0.1
+    end
+
     self:NextThink(CurTime())
     return true
 end
