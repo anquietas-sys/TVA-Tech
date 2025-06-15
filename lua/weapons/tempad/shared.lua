@@ -27,34 +27,37 @@ SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 SWEP.ShootSound = Sound( "buttons/button15.wav" )
 
-local function OpenMenu()
 
-	local myTitleLabel = vgui.Create( "DLabel", myBasePanel )
-	myTitleLabel:SetText( "My Awesome Panel" )
-	myTitleLabel:SetPos( 10, 10 )
-	myTitleLabel:SizeToContents()
-	myTitleLabel:SetTextColor( color_white )
+if CLIENT then
+	local function OpenMenu()
+		local myTitleLabel = vgui.Create( "DLabel", myBasePanel )
+		myTitleLabel:SetText( "My Awesome Panel" )
+		myTitleLabel:SetPos( 10, 10 )
+		myTitleLabel:SizeToContents()
+		myTitleLabel:SetTextColor( color_white )
 
-	local myCloseButton = vgui.Create( "DButton", myBasePanel )
-	myCloseButton:SetText( "Close Me" )
-	myCloseButton:SetSize( 100, 30 )
-	local panelW, panelH = myBasePanel:GetSize()
-	myCloseButton:SetPos( panelW - 110, panelH - 40 )
+		local myCloseButton = vgui.Create( "DButton", myBasePanel )
+		myCloseButton:SetText( "Close Me" )
+		myCloseButton:SetSize( 100, 30 )
+		local panelW, panelH = myBasePanel:GetSize()
+		myCloseButton:SetPos( panelW - 110, panelH - 40 )
 
-	myCloseButton.DoClick = function( theButton )
-	  print( "Close button clicked!" )
-	  myBasePanel:Remove()
+		myCloseButton.DoClick = function( theButton )
+		  print( "Close button clicked!" )
+		  myBasePanel:Remove()
+		end
+	end
+
+	function SWEP:PrimaryAttack()
+		self:SetNextPrimaryFire( CurTime() + 0.5 )
+		print("test")
+	end
+
+	function SWEP:SecondaryAttack()
+		self:SetNextPrimaryFire( CurTime() + 0.5 )
+		OpenMenu()
 	end
 end
 
 
 
-function SWEP:PrimaryAttack()
-	self:SetNextPrimaryFire( CurTime() + 0.5 )
-	print("test")
-end
-
-function SWEP:SecondaryAttack()
-	self:SetNextPrimaryFire( CurTime() + 0.5 )
-	OpenMenu()
-end
