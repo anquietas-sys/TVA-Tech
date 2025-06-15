@@ -1,0 +1,20 @@
+"VertexLitGeneric"
+{
+    "$basetexture" "timedoor/timedoor_color"
+    "$color2" "[ 0.5 0.5 0.5 ]"
+    "$additive" "1"
+    "$alpha" "0.4"
+    "$bumpmap" "timedoor/timedoor_normal"
+    "$normalmapalphaenvmapmask" "0"
+    "$envmap" "env_cubemap"
+    "$envmapmask" "timedoor/timedoor_specularmask"
+    "$normalmap" "timedoor/timedoor_normal"
+
+    "$translucent" "1"
+
+    "$nofog" "1"
+    "$nocull" "1"
+    "$model" "1"    
+}
+
+
