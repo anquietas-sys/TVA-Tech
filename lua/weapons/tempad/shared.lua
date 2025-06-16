@@ -27,6 +27,12 @@ SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 SWEP.ShootSound = Sound( "buttons/button15.wav" )
 
+local selectedPlayer = nil
+local destinationpos = {}
+local destinationang = {}
+local waypoints = waypoints or {}
+
+
 // This following code will run on both client AND server
 function SWEP:SecondaryAttack()
 	if ( game.SinglePlayer() ) then self:CallOnClient( "SecondaryAttack" ) end
@@ -65,17 +71,46 @@ if SERVER then
 	// Specify what to do when the server recieves the 'TVA_CreateDoor' net message:
 	// 		(len is useless, it's the net message length)
 	net.Receive("TVA_CreateDoor", function(len, ply)
-		// Create door!
-		local door = ents.Create("timedoor")
-		door:SetPos(ply:GetEyeTrace().HitPos) // Position it where the player is looking
-		door:SetAngles(ply:GetForward():Angle())
-		door:Spawn()
+    local destPos = net.ReadVector()
+    local destAng = net.ReadAngle()
+    local color = net.ReadColor(false)
+    local glitch = net.ReadBool()
 
-		// Make it undoable
-		undo.Create("Time Door")
-		    undo.AddEntity(door)
-		    undo.SetPlayer(ply)
-		undo.Finish()
+    if glitch == false then
+    	classname = "timedoor"
+    else
+    	classname = "timedoorglitchy"
+    end
+
+    print(classname)
+
+    if not destPos or not destAng then
+        ply:ChatPrint("Invalid destination data.")
+        return
+    end
+
+    -- Create the first door at where the player is looking
+    local door1 = ents.Create(classname)
+    door1:SetPos(ply:GetEyeTrace().HitPos)
+    door1:SetAngles(ply:GetForward():Angle())
+    door1:Spawn()
+
+    -- Create the second door at the destination received
+    local door2 = ents.Create(classname)
+    door2:SetPos(destPos)
+    door2:SetAngles(destAng)
+    door2:Spawn()
+
+    door1.Partner = door2
+    door2.Partner = door1
+    door1:SetColor(color)
+    door2:SetColor(color)
+
+    undo.Create("Time Door")
+        undo.AddEntity(door1)
+        undo.AddEntity(door2)
+        undo.SetPlayer(ply)
+    undo.Finish()
 	end)
 end
 
@@ -91,33 +126,231 @@ end
 // Will only run on the client. I put this at the bottom because clientside code (especially vgui stuff) takes a lot of space;
 //    Space I doubt you want to wade through to get to literally any other code haha	
 if CLIENT then
-	function SWEP:OpenMenu()
-		local frame = vgui.Create("DFrame")
-		frame:SetSize(ScrW()/2, ScrH()/2) // Set the frame size to half of the screen's width and height
-		frame:Center() // Centers the frame on the screen
-		frame:MakePopup() // Unlocks the mouse, shows the cursor so we can interact with the panel
-		frame:SetTitle("Tempad") // Sets the title of the frame
+    local waypoints = waypoints or {}
 
-		// doin a heckin advanced!1!! (use this to set the background color of the frame)
-		function frame:Paint(w,h)
-			draw.RoundedBox(8, 0, 0, w, h, Color(25,25,25,250))
+    function SWEP:OpenMenu()
+        local frameWidth = ScrW() / 2
+        local frameHeight = ScrH() / 2
+
+        local frame = vgui.Create("DFrame")
+        frame:SetSize(frameWidth, frameHeight)
+        frame:Center()
+        frame:MakePopup()
+        frame:SetTitle("Tempad")
+
+        function frame:Paint(w, h)
+            draw.RoundedBox(8, 0, 0, w, h, Color(100, 68, 0, 250))
+        end
+
+        -- LEFT THIRD: Player list
+        local playerList = vgui.Create("DListView", frame)
+        playerList:SetSize(frameWidth / 3, frameHeight - 40)
+        playerList:SetPos(10, 30)
+        playerList:AddColumn("Name")
+
+        for _, ply in ipairs(player.GetAll()) do
+            playerList:AddLine(ply:Nick())
+        end
+
+        playerList.OnRowSelected = function(_, _, row)
+            local name = row:GetColumnText(1)
+            for _, ply in ipairs(player.GetAll()) do
+                if ply:Nick() == name then
+                    selectedPlayer = ply
+
+                    -- Set destinationpos and destinationang a few steps behind player
+                    local backOffset = -100 -- units behind
+                    local ang = ply:EyeAngles()
+                    ang.p = 0   -- zero out pitch (up/down)
+					ang.r = 0   -- zero out roll (tilt)
+                    local pos = ply:GetPos() + ang:Forward() * backOffset
+                    destinationpos = pos
+                    destinationang = ang
+
+                    break
+                end
+            end
+        end
+
+        -- MIDDLE THIRD: Waypoint controls
+        local waypointPanelX = frameWidth / 3 + 10
+        local waypointPanelWidth = frameWidth / 3 - 20
+
+        local addWaypointButton = vgui.Create("DButton", frame)
+        addWaypointButton:SetPos(waypointPanelX, 30)
+        addWaypointButton:SetSize(waypointPanelWidth, 25)
+        addWaypointButton:SetText("Add Waypoint (Your Position)")
+
+        local waypointNameEntry = vgui.Create("DTextEntry", frame)
+        waypointNameEntry:SetPos(waypointPanelX, 60)
+        waypointNameEntry:SetSize(waypointPanelWidth, 25)
+        waypointNameEntry:SetPlaceholderText("Enter waypoint name...")
+
+        local waypointList = vgui.Create("DListView", frame)
+        waypointList:SetPos(waypointPanelX, 90)
+        waypointList:SetSize(waypointPanelWidth, frameHeight - 130)
+        waypointList:AddColumn("Name")
+        waypointList:AddColumn("Position")
+        waypointList:AddColumn("Angle")
+
+        -- Populate waypoint list from persistent table
+        for _, wp in ipairs(waypoints) do
+            local posStr = string.format("X: %.1f Y: %.1f Z: %.1f", wp.pos.x, wp.pos.y, wp.pos.z)
+            local angStr = string.format("Yaw: %.1f Pitch: %.1f", wp.ang.yaw, wp.ang.pitch)
+            waypointList:AddLine(wp.name, posStr, angStr)
+        end
+
+        addWaypointButton.DoClick = function()
+            local name = waypointNameEntry:GetValue()
+            if name == "" then
+                chat.AddText(Color(248, 134, 30), "[Tempad] Please enter a name for the waypoint!")
+                return
+            end
+
+            local ply = LocalPlayer()
+            local pos = ply:GetPos()
+            local ang = ply:EyeAngles()
+            local ang = ply:EyeAngles()
+			ang.p = 0   -- zero out pitch (up/down)
+			ang.r = 0   -- zero out roll (tilt)
+
+            table.insert(waypoints, {name = name, pos = pos, ang = ang})
+
+            local posStr = string.format("X: %.1f Y: %.1f Z: %.1f", pos.x, pos.y, pos.z)
+            local angStr = string.format("Yaw: %.1f Pitch: %.1f", ang.yaw, ang.pitch)
+
+            waypointList:AddLine(name, posStr, angStr)
+
+            waypointNameEntry:SetText("")
+        end
+
+        waypointList.OnRowSelected = function(_, _, row)
+            local name = row:GetColumnText(1)
+            for _, wp in ipairs(waypoints) do
+                if wp.name == name then
+                    selectedWaypoint = wp
+                    destinationpos = wp.pos
+                    destinationang = wp.ang
+
+                    break
+                end
+            end
+        end
+
+
+
+		local customizationPanel = vgui.Create("DPanel", frame)
+		customizationPanel:SetSize(frameWidth * (1/3) - 20, frameHeight - 40)
+		customizationPanel:SetPos(frameWidth * (2/3) + 10, 30)
+		customizationPanel:SetBackgroundColor(Color(120, 80, 20))
+
+		-- Title Label
+		local titleLabel = vgui.Create("DLabel", customizationPanel)
+		titleLabel:SetText("Customisation")
+		titleLabel:SetFont("DermaLarge")
+		titleLabel:SizeToContents()
+		titleLabel:SetPos(10, 5)
+
+		-- Model Preview
+		local modelPreview = vgui.Create("DModelPanel", customizationPanel)
+		modelPreview:SetSize(customizationPanel:GetWide() - 20, customizationPanel:GetWide() - 20)
+		modelPreview:SetPos(10, 40)
+		modelPreview:SetModel("models/timedoor/timedoor.mdl")
+		modelPreview:SetFOV(40)
+		modelPreview:SetCamPos(Vector(100, 100, 60))
+		modelPreview:SetLookAt(Vector(0, 0, 40))
+		function modelPreview:LayoutEntity(ent)
+		    ent:SetAngles(Angle(0, RealTime() * 30 % 360, 0))
 		end
 
-		
-		local networked = vgui.Create("DButton", frame)
-		networked:SetHeight(frame:GetTall()/10) // Size everything relative to the frame to keep support for all monitor resolutions.
-		networked:Dock(BOTTOM) // Fills the bottom spot with the button
-		networked:SetText("Spawn a door in front of me!")
+		timer.Simple(0, function()
+		    if not IsValid(modelPreview) then return end
+		    local ent = modelPreview:GetEntity()
+		    if IsValid(ent) then
+		        ent:SetRenderMode(RENDERMODE_TRANSCOLOR)
+		        ent:SetColor(Color(255, 255, 255, 255))
+		    end
+		end)
 
-		networked.DoClick = function(btn)
-			net.Start("TVA_CreateDoor") // Spool up the hypothetical net-message railgun
-			net.SendToServer() // Fire it at the server
-			frame:Close()
+		-- Color Checkbox
+		local enableColor = vgui.Create("DCheckBoxLabel", customizationPanel)
+		enableColor:SetText("Custom Color")
+		enableColor:SetPos(10, modelPreview:GetY() + modelPreview:GetTall() + 10)
+		enableColor:SizeToContents()
+
+		-- Color Picker
+		local colorPicker = vgui.Create("DColorMixer", customizationPanel)
+		colorPicker:SetPos(10, enableColor:GetY() + 25)
+		colorPicker:SetSize(customizationPanel:GetWide() - 20, 100)
+		colorPicker:SetPalette(true)
+		colorPicker:SetAlphaBar(true)
+		colorPicker:SetWangs(true)
+		colorPicker:SetEnabled(false)
+
+		-- Function to update the model color based on checkbox and color picker
+		local function UpdateModelColor()
+		    if not IsValid(modelPreview) then return end
+		    local ent = modelPreview:GetEntity()
+		    if not IsValid(ent) then return end
+
+		    ent:SetRenderMode(RENDERMODE_TRANSCOLOR)
+
+		    if enableColor:GetChecked() then
+		        local col = colorPicker:GetColor()
+		        ent:SetColor(col)
+		    else
+		        ent:SetColor(Color(255, 255, 255, 255))
+		    end
 		end
 
-		// Removed close button because DFrame already has a close button unless DFrame:ShowCloseButton is set to false.
-	end
+		-- Checkbox toggles the color picker and updates preview color
+		enableColor.OnChange = function(_, val)
+		    colorPicker:SetEnabled(val)
+		    UpdateModelColor()
+		end
+
+		-- Color picker updates preview color live
+		colorPicker.ValueChanged = function(_, color)
+		    UpdateModelColor()
+		end
+
+		-- Glitchy Checkbox
+		local glitchyCheck = vgui.Create("DCheckBoxLabel", customizationPanel)
+		glitchyCheck:SetText("Glitchy")
+		glitchyCheck:SetPos(10, colorPicker:GetY() + colorPicker:GetTall() + 10)
+		glitchyCheck:SizeToContents()
+
+
+
+        -- BOTTOM BUTTON: Open Time Door
+        local networked = vgui.Create("DButton", frame)
+        networked:SetHeight(frameHeight / 10)
+        networked:Dock(BOTTOM)
+        networked:SetText("Open a Time Door to the destination.")
+
+        networked.DoClick = function()
+
+        	if enableColor:GetChecked() == true then
+        		sentcolor = colorPicker:GetColor()
+        	else 
+        		sentcolor = Color(255, 198, 114, 254)
+        	end
+
+			local function IsVector(val)
+			    return getmetatable(val) == getmetatable(Vector(0, 0, 0))
+			end
+
+		    if IsVector(destinationpos) then
+		        net.Start("TVA_CreateDoor")
+		            net.WriteVector(destinationpos)
+		            net.WriteAngle(destinationang)
+		            net.WriteColor(sentcolor,false)
+		            net.WriteBool(glitchyCheck:GetChecked())
+		        net.SendToServer()
+		        frame:Close()
+		    else
+		        chat.AddText(Color(248, 134, 30), "[Tempad] No destination set!")
+		    end
+		end
+    end
 end
-
-
-
