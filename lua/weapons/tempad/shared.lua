@@ -8,7 +8,7 @@ SWEP.Primary.ClipSize		= -1
 SWEP.Primary.DefaultClip	= -1
 SWEP.Primary.Automatic		= true
 SWEP.Primary.Ammo		= "none"
-
+SWEP.m_WeaponDeploySpeed = 6
 SWEP.Secondary.ClipSize		= -1
 SWEP.Secondary.DefaultClip	= -1
 SWEP.Secondary.Automatic	= false
@@ -55,6 +55,7 @@ if SERVER then
 		// Create door!
 		local door = ents.Create("timedoor")
 		door:SetPos(ply:GetEyeTrace().HitPos) // Positions it where the player is looking
+		door:SetAngles(ply:GetForward():Angle())
 		door:Spawn()
 	end)
 end
