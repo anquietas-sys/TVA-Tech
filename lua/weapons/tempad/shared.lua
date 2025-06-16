@@ -22,7 +22,7 @@ SWEP.SlotPos			= 3
 SWEP.DrawAmmo			= false
 SWEP.DrawCrosshair		= true
 SWEP.ViewModel			= "models/weapons/c_tempad.mdl"
-SWEP.WorldModel			= "models/items/healthkit.mdl"
+SWEP.WorldModel			= "models/weapons/w_tempad.mdl"
 SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 SWEP.ShootSound = Sound( "buttons/button15.wav" )
@@ -31,6 +31,11 @@ local selectedPlayer = nil
 local destinationpos = {}
 local destinationang = {}
 local waypoints = waypoints or {}
+
+-- Weapon selector icon
+if CLIENT then
+    SWEP.WepSelectIcon = surface.GetTextureID( 'weapons/tempad' )
+end
 
 
 // This following code will run on both client AND server
