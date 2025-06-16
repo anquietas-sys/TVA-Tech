@@ -17,7 +17,7 @@ function ENT:Initialize()
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
 
-    self:SetColor(Color(255, 168, 63))
+    self:SetColor(Color(255, 198, 114, 254))
 
     local phys = self:GetPhysicsObject()
     if IsValid(phys) then
@@ -173,7 +173,7 @@ function ENT:MakeGlitchy(glitchy)
 
     if glitchy == true then
         self:SetRenderFX(15)
-        self:SetColor(Color(255, 198, 114, 255))
+        self:SetColor(Color(255, 168, 63, 254))
     else
         self:SetRenderFX(0)
         self:SetColor(Color(255,255,255,255))
