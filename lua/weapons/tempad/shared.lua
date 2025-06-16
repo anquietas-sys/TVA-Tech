@@ -54,9 +54,15 @@ if SERVER then
 	net.Receive("TVA_CreateDoor", function(len, ply)
 		// Create door!
 		local door = ents.Create("timedoor")
-		door:SetPos(ply:GetEyeTrace().HitPos) // Positions it where the player is looking
+		door:SetPos(ply:GetEyeTrace().HitPos) // Position it where the player is looking
 		door:SetAngles(ply:GetForward():Angle())
 		door:Spawn()
+
+		// Make it undoable
+		undo.Create("Time Door")
+		    undo.AddEntity(door)
+		    undo.SetPlayer(ply)
+		undo.Finish()
 	end)
 end
 
