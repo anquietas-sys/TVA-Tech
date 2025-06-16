@@ -1,5 +1,5 @@
 ENT.Type = "anim"
-ENT.Base = "base_anim"
+ENT.Base = "timedoor"
 
 ENT.PrintName = "Time Door (Glitchy)"
 ENT.Author = "A. D. Douglass"

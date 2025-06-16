@@ -1,26 +1,31 @@
 include("shared.lua")
 
+function ENT:Initialize()
+    self.LightColor = self:GetColor()
+    self.LightProperties = {
+        r = self.LightColor.r,
+        g = self.LightColor.g,
+        b = self.LightColor.b,
+        brightness = 3,
+        Decay = 512,
+        Size = 128
+    }
+end
+
+function ENT:OnColorChanged(color)
+    self.LightProperties = {
+        r = color.r,
+        g = color.g,
+        b = color.b,
+        brightness = 3,
+        Decay = 512,
+        Size = 128
+    }
+end
+
 function ENT:Draw()
     self:DrawModel()
 end
-
-net.Receive("Timedoor_PlayOpenAnim", function()
-    LocalPlayer():ChatPrint("CL: NETWORK MESSAGE")
-    local ent = net.ReadEntity()
-    if not IsValid(ent) then return end
-
-    ent:SetNoDraw(false) -- show the door
-
-    local seq = ent:LookupSequence("open")
-    if IsValid(seq) then
-        ent:ResetSequence(seq)
-        ent:SetCycle(0)
-        ent:SetPlaybackRate(1)
-        ent._IsPlayingOpenAnim = true -- flag for tracking
-    else
-        print("Timedoor: 'open' animation not found on client!")
-    end
-end)
 
 function ENT:Think()
     self:FrameAdvance()
@@ -44,19 +49,42 @@ function ENT:Think()
         end
     end
 
+    local curColor = self:GetColor()
+    if curColor ~= self._lastColor then
+        self._lastColor = curColor
+        self:OnColorChanged(curColor)
+    end
+
     local dlight = DynamicLight(self:EntIndex())
 
     if dlight then
         dlight.pos = self:GetPos() + self:GetUp() * 35
-        dlight.r = 255
-        dlight.g = 254
-        dlight.b = 171
-        dlight.brightness = 3
-        dlight.Decay = 512
-        dlight.Size = 128
-        dlight.DieTime = CurTime() + 0.1
+        dlight.r = self.LightProperties.r
+        dlight.g = self.LightProperties.g
+        dlight.b = self.LightProperties.b
+        dlight.brightness = self.LightProperties.brightness
+        dlight.Decay = self.LightProperties.Decay
+        dlight.Size = self.LightProperties.Size
+        dlight.dietime = CurTime() + 0.1
     end
 
     self:NextThink(CurTime())
     return true
 end
+
+net.Receive("Timedoor_PlayOpenAnim", function()
+    local ent = net.ReadEntity()
+    if not IsValid(ent) then return end
+
+    ent:SetNoDraw(false) -- show the door
+
+    local seq = ent:LookupSequence("open")
+    if IsValid(seq) then
+        ent:ResetSequence(seq)
+        ent:SetCycle(0)
+        ent:SetPlaybackRate(1)
+        ent._IsPlayingOpenAnim = true -- flag for tracking
+    else
+        print("Timedoor: 'open' animation not found on client!")
+    end
+end)

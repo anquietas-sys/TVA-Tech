@@ -6,6 +6,8 @@ config.Blacklist = {
     
     ["prop_door"] = true,
     ["prop_door_rotating"] = true,
+
+    ['apollopanel'] = true,
 }
 
 

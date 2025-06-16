@@ -6,11 +6,18 @@ local SoundScripts = include("tempad/soundscripts.lua")
 local TeleportFunctions = include("tempad/teleport.lua")
 local config = include("tempad/config.lua")
 
+// Setting these up so that our children entities can use them without overriding the original logic
+function ENT:PostInitialize() end
+function ENT:PostUse(activator, caller, usetype, value) end
+function ENT:PostStartTouch(activator) end
+
 function ENT:Initialize()
     self:SetModel("models/timedoor/timedoor.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
+
+    self:SetColor(Color(255, 168, 63))
 
     local phys = self:GetPhysicsObject()
     if IsValid(phys) then
@@ -23,18 +30,20 @@ function ENT:Initialize()
 
     self.Open = false
     self.Partner = nil
+    self.Glitchy = false
 
     self.DebugTrigger = true
 
     self.UseCooldown = CurTime()
 
+    self:PostInitialize()
+
     if !self.Open then
         self:OpenDoor()
     end
-
 end
 
-function ENT:Use()
+function ENT:Use(activator, caller, usetype, value)
     if CurTime() >= self.UseCooldown then
         self.DebugTrigger = !self.DebugTrigger
         self:SetTrigger(self.DebugTrigger)
@@ -42,6 +51,8 @@ function ENT:Use()
         Entity(1):ChatPrint(tostring(self.DebugTrigger))
 
         self.UseCooldown = CurTime() + 1
+
+        self:PostUse(activator, caller, usetype, value)
     end
 end
 
@@ -52,7 +63,7 @@ function ENT:StartTouch(ent)
         self:OnPlayerPass(ent)
     end
 
-    if ent:GetClass() != "timedoor" then
+    if config.Blacklist[ent:GetClass()] != true then
         local propSize = ent:OBBMaxs() - ent:OBBMins()
         local doorSize = self:OBBMaxs() - self:OBBMins()
 
@@ -64,10 +75,15 @@ function ENT:StartTouch(ent)
         end
     end
 
-    if ent:GetClass() == "timedoor" then
+    // Checks if the current entity's base class (parent) is 'timedoor'
+    local entTable = scripted_ents.Get(ent:GetClass())
+
+    if (ent:GetClass() == "timedoor") or (entTable and entTable.Base == "timedoor") then
         self.Partner = ent
         ent.Partner = self
     end
+
+    self:PostStartTouch(ent)
 end
 
 function ENT:OnPlayerPass(ply)
@@ -108,7 +124,11 @@ function ENT:OpenDoor()
     self:SetSequence(seq)
 
     -- Play open sound
-    SoundScripts.PlayOpenSound(self:GetPos())
+    if self.Glitchy then
+        SoundScripts.PlayGlitchyOpenSound(self:GetPos())
+    else
+        SoundScripts.PlayOpenSound(self:GetPos())
+    end
 
     self.Open = true
 
@@ -122,14 +142,17 @@ function ENT:OpenDoor()
 end
 
 function ENT:CloseDoor(toRemove)
-    -- Play "open" animation on spawn
     local seq = self:LookupSequence("close")
     self:SetCycle(0)
     self:SetPlaybackRate(1)
     self:SetSequence(seq)
 
-    -- Play open sound
-    SoundScripts.PlayCloseSound(self:GetPos())
+    -- Play close sound
+    if self.Glitchy then
+        SoundScripts.PlayGlitchyCloseSound(self:GetPos())
+    else
+        SoundScripts.PlayCloseSound(self:GetPos())
+    end
 
     self.Open = false
 
@@ -143,4 +166,16 @@ function ENT:CloseDoor(toRemove)
             end
         end
     end)
+end
+
+function ENT:MakeGlitchy(glitchy)
+    self.Glitchy = glitchy
+
+    if glitchy == true then
+        self:SetRenderFX(15)
+        self:SetColor(Color(255, 198, 114, 255))
+    else
+        self:SetRenderFX(0)
+        self:SetColor(Color(255,255,255,255))
+    end
 end
