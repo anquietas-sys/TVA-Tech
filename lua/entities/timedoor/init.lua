@@ -1,4 +1,5 @@
-AddCSLuaFile()
+AddCSLuaFile("cl_init.lua")
+AddCSLuaFile("shared.lua")
 include("shared.lua")
 
 local SoundScripts = include("tempad/soundscripts.lua")
