@@ -41,9 +41,40 @@ function ENT:Initialize()
     if !self.Open then
         self:OpenDoor()
     end
+
+    -- Wiremod stuff.
+    if istable(WireLib) and WireLib.AdjustInputs then
+        -- WireLib is installed and functional
+
+        print("Creating Wire Inputs for Time Door")
+
+        self.Inputs = WireLib.CreateInputs(self, {
+            "Partner (Links this Time Door to another Time Door.) [ENTITY]",
+            "Open (Controls if the Time Door is open.) [NORMAL]",
+        })
+    else
+        -- do nothing
+    end
+
 end
 
-function ENT:Use(activator, caller, usetype, value)
+function ENT:TriggerInput( name, value )
+    if (name == "Partner") then
+        self.Partner = value
+    elseif (name == "Open") then
+        if value >= 1 then
+            if self.Open == false then
+                self:OpenDoor()
+            end
+        else
+            if self.Open == true then
+                self:CloseDoor()
+            end
+        end
+    end
+end
+
+--[[ function ENT:Use(activator, caller, usetype, value)
     if CurTime() >= self.UseCooldown then
         self.DebugTrigger = !self.DebugTrigger
         self:SetTrigger(self.DebugTrigger)
@@ -54,11 +85,11 @@ function ENT:Use(activator, caller, usetype, value)
 
         self:PostUse(activator, caller, usetype, value)
     end
-end
+end--]] 
 
 function ENT:StartTouch(ent)
     if not IsValid(ent) then return end
-
+    if not self.Open then return end
     if ent:IsPlayer() then
         self:OnPlayerPass(ent)
     end
@@ -88,6 +119,7 @@ end
 
 function ENT:OnPlayerPass(ply)
   //  print(ply:Nick() .. " entered a Time Door.")
+
     SoundScripts.PlayTravelSound(self:GetPos())
 
     if ply.TimeDoorCooldown == nil then
