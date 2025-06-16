@@ -1,0 +1,14 @@
+"VertexLitGeneric"
+{
+    "$basetexture" "models/weapons/tempad_color"
+    "$bumpmap" "models/weapons/tempad_normal"
+    "$envmap" "env_cubemap"
+    "$envmapmask" "models/weapons/tempad_metalnessmask"
+    "$model" "1"    
+
+    "$phong" "1"
+    "$phongexponent" "100"
+    "$phongboost" "1"
+}
+
+
