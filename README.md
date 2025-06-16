@@ -17,7 +17,7 @@ At the bottom is a button to open a pair of Time Doors, with the entrance appear
 ## COMING SOON
 
 ### Time Stick
-This futuristic weapon is designed to violently rip your enemy from every thread of time and space, basically desintegrating them.
+This futuristic weapon is designed to violently rip your enemy from every thread of time and space, basically disintegrating them.
 
 ### Reset Charge
 A similar technology to the time stick, but it instead wipes out an entire timeline. (Or in this case, everything in the map.)
