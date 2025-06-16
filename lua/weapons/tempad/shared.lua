@@ -82,7 +82,7 @@ if SERVER then
     	classname = "timedoorglitchy"
     end
 
-    print(classname)
+    // print(classname)
 
     if not destPos or not destAng then
         ply:ChatPrint("Invalid destination data.")
