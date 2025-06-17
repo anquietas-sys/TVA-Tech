@@ -1,6 +1,8 @@
 # TVA Technology
 An addon for Garry's Mod that adds technology from the Loki Television series.
 
+Found on the workshop here: https://steamcommunity.com/sharedfiles/filedetails/?id=3501380720
+
 ## Features
 
 ### Time Doors
