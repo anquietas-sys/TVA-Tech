@@ -6,6 +6,7 @@
     "$alpha" "0.4"
     "$bumpmap" "timedoor/timedoor_normal"
     "$normalmapalphaenvmapmask" "1"
+    "$envmaptint" "[0.3 0.3 0.3]"
     "$envmap" "env_cubemap"
 
     "$translucent" "1"
