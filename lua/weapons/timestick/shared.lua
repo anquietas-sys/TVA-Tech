@@ -1,5 +1,6 @@
 if SERVER then
     AddCSLuaFile()
+    AddCSLuaFile("tempad/config.lua")
 end
 
 local config = include("tempad/config.lua")
