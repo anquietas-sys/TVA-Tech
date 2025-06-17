@@ -24,6 +24,56 @@ function ENT:OnColorChanged(color)
 end
 
 function ENT:Draw()
+    if halo.RenderedEntity() == self then
+        self:DrawModel()
+        return
+    end
+
+    -- reusing screeneffect texture, no need to create a new rendertarget
+    local blur_texture = render.GetScreenEffectTexture(1)
+    render.UpdateScreenEffectTexture(1) -- update current screen data
+
+    -- blur rt
+    local cache = render.GetRenderTarget()
+    render.BlurRenderTarget(blur_texture, 5, 5, 1)
+    render.SetRenderTarget(cache)  -- blurrendertarget is fucked, gotta do this
+
+    -- massive block of stencil setup
+    render.ClearStencil()
+    render.SetStencilWriteMask(255)
+    render.SetStencilTestMask(255)
+    render.SetStencilReferenceValue(0)
+    render.SetStencilCompareFunction(STENCIL_ALWAYS)
+    render.SetStencilPassOperation(STENCIL_KEEP)
+    render.SetStencilFailOperation(STENCIL_KEEP)
+    render.SetStencilZFailOperation(STENCIL_KEEP)
+    render.SetStencilEnable(true)
+
+    -- k time to do the shits
+    -- task: replace behind of model with a blurred version of the background
+
+    -- first, we need to setup the area in the stencil buffer
+    -- where our texture will be rendered
+    render.SetStencilPassOperation(STENCIL_REPLACE)
+    render.SetStencilReferenceValue(1)
+
+    -- draw our model
+    -- before, you IGNORED z when drawing, but we dont actually want to do that
+    -- in this situation we still want to obey the depth buffer, but not write to it
+    -- othherwise that will make it draw through walls
+    render.OverrideDepthEnable(true, false)
+    self:DrawModel()
+    render.OverrideDepthEnable(false, false)
+
+    -- now, render our image in screenspace only on top of where our model was
+    render.SetStencilCompareFunction(STENCIL_EQUAL)
+    render.SetStencilPassOperation(STENCIL_KEEP)
+
+    render.DrawTextureToScreen(blur_texture)
+
+    render.SetStencilEnable(false)
+
+    -- Finally draw the actual door model
     self:DrawModel()
 end
 
