@@ -9,7 +9,7 @@ Found on the workshop here: https://steamcommunity.com/sharedfiles/filedetails/?
 The main feature of this addon are Time Doors. These glassy rectangles can transport you anywhere you desire.
 
 ### Wiremod support
-The standalone Time Door entity will be made to support wiremod inputs and outputs, letting you use them in your contraptions and dupes with style.
+The standalone Time Door entity supports wiremod inputs and outputs, letting you use them in your contraptions and dupes with style.
 
 ### Tempad
 The Tempad is a device with the primary purpose of opening and closing linked Time Door pairs.
