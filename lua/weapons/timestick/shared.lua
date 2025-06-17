@@ -42,7 +42,7 @@ function SWEP:PrimaryAttack()
     self:SendWeaponAnim(ACT_VM_MISSCENTER)
 
     if SERVER then
-        self:EmitSound("weapons/stunstick/stunstick_swing1.wav", 75, 100, 1)
+        self:EmitSound("weapons/timestick_swing.wav", 75, math.random(95, 105), 1)
 
         local tr = util.TraceHull({
             start = owner:GetShootPos(),
@@ -72,9 +72,9 @@ function SWEP:PrimaryAttack()
                     end
                 end
 
-                self:EmitSound("weapons/stunstick/stunstick_fleshhit1.wav")
+                hitEnt:EmitSound("weapons/timestick_dissolve.wav", 75, math.random(95, 105))
             else
-                self:EmitSound("weapons/stunstick/stunstick_impact1.wav")
+                self:EmitSound("physics/flesh/flesh_impact_bullet5.wav", 75, math.random(95, 105))
             end
         end
     end
