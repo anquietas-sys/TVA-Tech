@@ -256,75 +256,65 @@ if CLIENT then
 		titleLabel:SizeToContents()
 		titleLabel:SetPos(10, 5)
 
-		-- Model Preview
-		local modelPreview = vgui.Create("DModelPanel", customizationPanel)
-		modelPreview:SetSize(customizationPanel:GetWide() - 20, customizationPanel:GetWide() - 20)
-		modelPreview:SetPos(10, 40)
-		modelPreview:SetModel("models/timedoor/timedoor.mdl")
-		modelPreview:SetFOV(40)
-		modelPreview:SetCamPos(Vector(100, 100, 60))
-		modelPreview:SetLookAt(Vector(0, 0, 40))
-		function modelPreview:LayoutEntity(ent)
-		    ent:SetAngles(Angle(0, RealTime() * 30 % 360, 0))
-		end
+        -- Texture Panel instead of Model Preview
+        local previewWidth = customizationPanel:GetWide() - 200
+        local previewHeight = previewWidth * 1.6
 
-		timer.Simple(0, function()
-		    if not IsValid(modelPreview) then return end
-		    local ent = modelPreview:GetEntity()
-		    if IsValid(ent) then
-		        ent:SetRenderMode(RENDERMODE_TRANSCOLOR)
-		        ent:SetColor(Color(255, 255, 255, 255))
-		    end
-		end)
+        local texturePanel = vgui.Create("DPanel", customizationPanel)
+        texturePanel:SetSize(previewWidth, previewHeight)
+        texturePanel:SetPos(10, 40)
 
-		-- Color Checkbox
-		local enableColor = vgui.Create("DCheckBoxLabel", customizationPanel)
-		enableColor:SetText("Custom Color")
-		enableColor:SetPos(10, modelPreview:GetY() + modelPreview:GetTall() + 10)
-		enableColor:SizeToContents()
+        texturePanel:SetBackgroundColor(Color(255, 198, 114, 255))
 
-		-- Color Picker
-		local colorPicker = vgui.Create("DColorMixer", customizationPanel)
-		colorPicker:SetPos(10, enableColor:GetY() + 25)
-		colorPicker:SetSize(customizationPanel:GetWide() - 20, 100)
-		colorPicker:SetPalette(true)
-		colorPicker:SetAlphaBar(true)
-		colorPicker:SetWangs(true)
-		colorPicker:SetEnabled(false)
+        -- Custom paint to draw texture
+        texturePanel.Paint = function(self, w, h)
+            surface.SetDrawColor(self:GetBackgroundColor())
+            surface.SetMaterial(Material("UI/timedoor_preview"))
+            surface.DrawTexturedRect(0, 0, w, h)
+        end
+        -- Color Checkbox
+        local enableColor = vgui.Create("DCheckBoxLabel", customizationPanel)
+        enableColor:SetText("Custom Color")
+        enableColor:SetPos(10, texturePanel:GetY() + texturePanel:GetTall() + 10)
+        enableColor:SizeToContents()
 
-		-- Function to update the model color based on checkbox and color picker
-		local function UpdateModelColor()
-		    if not IsValid(modelPreview) then return end
-		    local ent = modelPreview:GetEntity()
-		    if not IsValid(ent) then return end
+        -- Color Picker
+        local colorPicker = vgui.Create("DColorMixer", customizationPanel)
+        colorPicker:SetPos(10, enableColor:GetY() + 25)
+        colorPicker:SetSize(customizationPanel:GetWide() - 20, 150)
+        colorPicker:SetPalette(true)
+        colorPicker:SetAlphaBar(true)
+        colorPicker:SetWangs(true)
+        colorPicker:SetEnabled(false)
 
-		    ent:SetRenderMode(RENDERMODE_TRANSCOLOR)
+        -- Function to update the texture color
+        local function UpdateTextureColor()
+            if not IsValid(texturePanel) then return end
 
-		    if enableColor:GetChecked() then
-		        local col = colorPicker:GetColor()
-		        ent:SetColor(col)
-		    else
-		        ent:SetColor(Color(255, 255, 255, 255))
-		    end
-		end
+            if enableColor:GetChecked() then
+                local col = colorPicker:GetColor()
+                texturePanel:SetBackgroundColor(col)
+            else
+                texturePanel:SetBackgroundColor(Color(255, 198, 114, 255))
+            end
+        end
 
-		-- Checkbox toggles the color picker and updates preview color
-		enableColor.OnChange = function(_, val)
-		    colorPicker:SetEnabled(val)
-		    UpdateModelColor()
-		end
+        -- Checkbox toggles the color picker and updates texture color
+        enableColor.OnChange = function(_, val)
+            colorPicker:SetEnabled(val)
+            UpdateTextureColor()
+        end
 
-		-- Color picker updates preview color live
-		colorPicker.ValueChanged = function(_, color)
-		    UpdateModelColor()
-		end
+        -- Color picker updates texture color live
+        colorPicker.ValueChanged = function(_, color)
+            UpdateTextureColor()
+        end
 
-		-- Glitchy Checkbox
-		local glitchyCheck = vgui.Create("DCheckBoxLabel", customizationPanel)
-		glitchyCheck:SetText("Glitchy")
-		glitchyCheck:SetPos(10, colorPicker:GetY() + colorPicker:GetTall() + 10)
-		glitchyCheck:SizeToContents()
-
+        -- Glitchy Checkbox
+        local glitchyCheck = vgui.Create("DCheckBoxLabel", customizationPanel)
+        glitchyCheck:SetText("Glitchy")
+        glitchyCheck:SetPos(10, colorPicker:GetY() + colorPicker:GetTall() + 10)
+        glitchyCheck:SizeToContents()
 
 
         -- BOTTOM BUTTON: Open Time Door
