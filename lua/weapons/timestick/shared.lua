@@ -26,7 +26,7 @@ SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = "none"
 
 SWEP.HitDistance = 75
-SWEP.Damage = 3000
+SWEP.Damage = 1
 
 function SWEP:Initialize()
     self:SetHoldType("melee")
@@ -57,14 +57,20 @@ function SWEP:PrimaryAttack()
             local hitEnt = tr.Entity
 
             if IsValid(hitEnt) then
-                local dmg = DamageInfo()
-                dmg:SetAttacker(owner)
-                dmg:SetInflictor(self)
-                dmg:SetDamage(self.Damage)
-                dmg:SetDamageType(DMG_DISSOLVE)
+                local constrainedEnts = constraint.GetAllConstrainedEntities(hitEnt)
 
-                hitEnt:TakeDamageInfo(dmg)
-                hitEnt:Dissolve(2, 3)
+                for ent, _ in pairs(constrainedEnts) do
+                    if IsValid(ent) and ent:GetClass() ~= "worldspawn" then
+                        local dmg = DamageInfo()
+                        dmg:SetAttacker(owner)
+                        dmg:SetInflictor(self)
+                        dmg:SetDamage(self.Damage)
+                        dmg:SetDamageType(DMG_DISSOLVE)
+
+                        ent:Dissolve(2, 3)
+                        ent:TakeDamageInfo(dmg)
+                    end
+                end
 
                 self:EmitSound("weapons/stunstick/stunstick_fleshhit1.wav")
             else
