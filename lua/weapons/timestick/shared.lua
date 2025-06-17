@@ -28,6 +28,12 @@ SWEP.Secondary.Ammo = "none"
 SWEP.HitDistance = 75
 SWEP.Damage = 1
 
+-- Weapon selector icon
+if CLIENT then
+    SWEP.WepSelectIcon = surface.GetTextureID( 'weapons/timestick' )
+end
+
+
 function SWEP:Initialize()
     self:SetHoldType("melee")
 end
