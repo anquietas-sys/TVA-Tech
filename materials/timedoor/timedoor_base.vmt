@@ -5,10 +5,8 @@
     "$additive" "1"
     "$alpha" "0.4"
     "$bumpmap" "timedoor/timedoor_normal"
-    "$normalmapalphaenvmapmask" "0"
+    "$normalmapalphaenvmapmask" "1"
     "$envmap" "env_cubemap"
-    "$envmapmask" "timedoor/timedoor_specularmask"
-    "$normalmap" "timedoor/timedoor_normal"
 
     "$translucent" "1"
 
