@@ -2,6 +2,8 @@ if SERVER then
     AddCSLuaFile()
 end
 
+local config = include("tempad/config.lua")
+
 SWEP.PrintName = "Time Stick"
 SWEP.Author = "Time Variance Authority"
 SWEP.Instructions = "Left-click to hit things."
@@ -62,25 +64,29 @@ function SWEP:PrimaryAttack()
         if tr.Hit then
             local hitEnt = tr.Entity
 
-            if IsValid(hitEnt) then
-                local constrainedEnts = constraint.GetAllConstrainedEntities(hitEnt)
-
-                for ent, _ in pairs(constrainedEnts) do
-                    if IsValid(ent) and ent:GetClass() ~= "worldspawn" then
-                        local dmg = DamageInfo()
-                        dmg:SetAttacker(owner)
-                        dmg:SetInflictor(self)
-                        dmg:SetDamage(self.Damage)
-                        dmg:SetDamageType(DMG_DISSOLVE)
-
-                        ent:Dissolve(2, 3)
-                        ent:TakeDamageInfo(dmg)
-                    end
-                end
-
-                hitEnt:EmitSound("weapons/timestick_dissolve.wav", 75, math.random(95, 105))
+            if config.Blacklist[hitEnt:GetClass()] == true then
+                -- do nothing
             else
-                self:EmitSound("physics/flesh/flesh_impact_bullet5.wav", 75, math.random(95, 105))
+                if IsValid(hitEnt) then
+                    local constrainedEnts = constraint.GetAllConstrainedEntities(hitEnt)
+
+                    for ent, _ in pairs(constrainedEnts) do
+                        if IsValid(ent) and ent:GetClass() ~= "worldspawn" then
+                            local dmg = DamageInfo()
+                            dmg:SetAttacker(owner)
+                            dmg:SetInflictor(self)
+                            dmg:SetDamage(self.Damage)
+                            dmg:SetDamageType(DMG_DISSOLVE)
+
+                            ent:Dissolve(2, 3)
+                            ent:TakeDamageInfo(dmg)
+                        end
+                    end
+
+                    hitEnt:EmitSound("weapons/timestick_dissolve.wav", 75, math.random(95, 105))
+                else
+                    self:EmitSound("physics/flesh/flesh_impact_bullet5.wav", 75, math.random(95, 105))
+                end
             end
         end
     end
