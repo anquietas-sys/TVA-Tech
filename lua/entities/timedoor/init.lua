@@ -28,7 +28,8 @@ function ENT:Initialize()
     self:SetCollisionGroup(COLLISION_GROUP_WORLD)
     self:SetTrigger(true)
 
-    self.Open = false
+    self:SetNWBool("Open", false)
+    self:SetNWBool("FullyClosed", true)
     self.Partner = nil
     self.Glitchy = false
 
@@ -38,7 +39,7 @@ function ENT:Initialize()
 
     self:PostInitialize()
 
-    if !self.Open then
+    if !self:GetNWBool("Open") then
         self:OpenDoor()
     end
 
@@ -63,11 +64,11 @@ function ENT:TriggerInput( name, value )
         self.Partner = value
     elseif (name == "Open") then
         if value >= 1 then
-            if self.Open == false then
+            if self:GetNWBool("Open") == false then
                 self:OpenDoor()
             end
         else
-            if self.Open == true then
+            if self:GetNWBool("Open") == true then
                 self:CloseDoor()
             end
         end
@@ -89,7 +90,7 @@ end--]]
 
 function ENT:StartTouch(ent)
     if not IsValid(ent) then return end
-    if not self.Open then return end
+    if not self:GetNWBool("Open") then return end
     if ent:IsPlayer() then
         self:OnPlayerPass(ent)
     end
@@ -162,7 +163,8 @@ function ENT:OpenDoor()
         SoundScripts.PlayOpenSound(self:GetPos())
     end
 
-    self.Open = true
+    self:SetNWBool("FullyClosed", false)
+    self:SetNWBool("Open", true)
 
     timer.Simple(self:SequenceDuration(), function()
         if IsValid(self) then
@@ -174,6 +176,8 @@ function ENT:OpenDoor()
 end
 
 function ENT:CloseDoor(toRemove)
+    self:SetNWBool("FullyClosed", false)
+    
     local seq = self:LookupSequence("close")
     self:SetCycle(0)
     self:SetPlaybackRate(1)
@@ -186,12 +190,14 @@ function ENT:CloseDoor(toRemove)
         SoundScripts.PlayCloseSound(self:GetPos())
     end
 
-    self.Open = false
+    self:SetNWBool("Open", false)
 
     timer.Simple(self:SequenceDuration(), function()
         if IsValid(self) then
             self:SetPlaybackRate(0)
             self:SetCycle(1)
+
+            self:SetNWBool("FullyClosed", true) // Let us know when to stop drawing the entity on the client
 
             if toRemove == true then
                 self:Remove()

@@ -24,6 +24,11 @@ function ENT:OnColorChanged(color)
 end
 
 function ENT:Draw()
+    if self:GetNWBool("FullyClosed") then
+        // Dont draw anything at all if the door is closed
+        return
+    end
+
     if halo.RenderedEntity() == self then
         self:DrawModel()
         return
@@ -107,7 +112,7 @@ function ENT:Think()
 
     local dlight = DynamicLight(self:EntIndex())
 
-    if dlight then
+    if dlight and self:GetNWBool("Open") then
         dlight.pos = self:GetPos() + self:GetUp() * 35
         dlight.r = self.LightProperties.r
         dlight.g = self.LightProperties.g
@@ -115,7 +120,7 @@ function ENT:Think()
         dlight.brightness = self.LightProperties.brightness
         dlight.Decay = self.LightProperties.Decay
         dlight.Size = self.LightProperties.Size
-        dlight.dietime = CurTime() + 0.1
+        dlight.dietime = CurTime()+0.1
     end
 
     self:NextThink(CurTime())
