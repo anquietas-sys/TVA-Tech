@@ -14,7 +14,8 @@ SWEP.Spawnable = true
 SWEP.AdminOnly = true
 
 SWEP.Base = "weapon_base"
-
+SWEP.Slot           = 1
+SWEP.SlotPos            = 1
 SWEP.UseHands = true
 SWEP.ViewModel = "models/weapons/c_timestick.mdl"
 SWEP.WorldModel = "models/weapons/w_timestick.mdl"
