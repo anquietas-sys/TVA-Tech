@@ -13,8 +13,8 @@ SWEP.AdminOnly = true
 SWEP.Base = "weapon_base"
 
 SWEP.UseHands = true
-SWEP.ViewModel = "models/weapons/c_stunstick.mdl"
-SWEP.WorldModel = "models/weapons/w_stunbaton.mdl"
+SWEP.ViewModel = "models/weapons/c_timestick.mdl"
+SWEP.WorldModel = "models/weapons/w_timestick.mdl"
 SWEP.ViewModelFOV = 54
 
 SWEP.Primary.ClipSize = -1
