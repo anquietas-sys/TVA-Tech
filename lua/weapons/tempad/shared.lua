@@ -131,9 +131,51 @@ end
 // Will only run on the client. I put this at the bottom because clientside code (especially vgui stuff) takes a lot of space;
 //    Space I doubt you want to wade through to get to literally any other code haha	
 if CLIENT then
-    local waypoints = waypoints or {}
+    local waypoints = {}
+
+    -- Customization config table
+    local customizationData = {
+        useCustomColor = false,
+        color = Color(255, 198, 114, 255),
+        glitchy = false
+    }
+
+    -- File paths
+    local function GetWaypointFileName()
+        return "TVA/" .. game.GetMap() .. ".txt"
+    end
+
+    local function SaveWaypoints()
+        file.CreateDir("TVA")
+        local json = util.TableToJSON(waypoints, true)
+        file.Write(GetWaypointFileName(), json)
+    end
+
+    local function LoadWaypoints()
+        waypoints = {}
+        if file.Exists(GetWaypointFileName(), "DATA") then
+            local json = file.Read(GetWaypointFileName(), "DATA")
+            waypoints = util.JSONToTable(json) or {}
+        end
+    end
+
+    local function SaveCustomizations()
+        file.CreateDir("TVA")
+        file.Write("TVA/tempad_customisations.txt", util.TableToJSON(customizationData, true))
+    end
+
+    local function LoadCustomizations()
+        if file.Exists("TVA/tempad_customisations.txt", "DATA") then
+            local json = file.Read("TVA/tempad_customisations.txt", "DATA")
+            local tbl = util.JSONToTable(json)
+            if tbl then customizationData = tbl end
+        end
+    end
 
     function SWEP:OpenMenu()
+        LoadWaypoints()
+        LoadCustomizations()
+
         local frameWidth = ScrW() / 2
         local frameHeight = ScrH() / 2
 
@@ -147,7 +189,7 @@ if CLIENT then
             draw.RoundedBox(8, 0, 0, w, h, Color(100, 68, 0, 250))
         end
 
-        -- LEFT THIRD: Player list
+        -- LEFT: Player list
         local playerList = vgui.Create("DListView", frame)
         playerList:SetSize(frameWidth / 3, frameHeight - 40)
         playerList:SetPos(10, 30)
@@ -162,22 +204,17 @@ if CLIENT then
             for _, ply in ipairs(player.GetAll()) do
                 if ply:Nick() == name then
                     selectedPlayer = ply
-
-                    -- Set destinationpos and destinationang a few steps behind player
-                    local backOffset = -100 -- units behind
+                    local backOffset = -100
                     local ang = ply:EyeAngles()
-                    ang.p = 0   -- zero out pitch (up/down)
-					ang.r = 0   -- zero out roll (tilt)
-                    local pos = ply:GetPos() + ang:Forward() * backOffset
-                    destinationpos = pos
+                    ang.p = 0 ang.r = 0
+                    destinationpos = ply:GetPos() + ang:Forward() * backOffset
                     destinationang = ang
-
                     break
                 end
             end
         end
 
-        -- MIDDLE THIRD: Waypoint controls
+        -- MIDDLE: Waypoints
         local waypointPanelX = frameWidth / 3 + 10
         local waypointPanelWidth = frameWidth / 3 - 20
 
@@ -198,35 +235,10 @@ if CLIENT then
         waypointList:AddColumn("Position")
         waypointList:AddColumn("Angle")
 
-        -- Populate waypoint list from persistent table
         for _, wp in ipairs(waypoints) do
             local posStr = string.format("X: %.1f Y: %.1f Z: %.1f", wp.pos.x, wp.pos.y, wp.pos.z)
             local angStr = string.format("Yaw: %.1f Pitch: %.1f", wp.ang.yaw, wp.ang.pitch)
             waypointList:AddLine(wp.name, posStr, angStr)
-        end
-
-        addWaypointButton.DoClick = function()
-            local name = waypointNameEntry:GetValue()
-            if name == "" then
-                chat.AddText(Color(248, 134, 30), "[Tempad] Please enter a name for the waypoint!")
-                return
-            end
-
-            local ply = LocalPlayer()
-            local pos = ply:GetPos()
-            local ang = ply:EyeAngles()
-            local ang = ply:EyeAngles()
-			ang.p = 0   -- zero out pitch (up/down)
-			ang.r = 0   -- zero out roll (tilt)
-
-            table.insert(waypoints, {name = name, pos = pos, ang = ang})
-
-            local posStr = string.format("X: %.1f Y: %.1f Z: %.1f", pos.x, pos.y, pos.z)
-            local angStr = string.format("Yaw: %.1f Pitch: %.1f", ang.yaw, ang.pitch)
-
-            waypointList:AddLine(name, posStr, angStr)
-
-            waypointNameEntry:SetText("")
         end
 
         waypointList.OnRowSelected = function(_, _, row)
@@ -236,86 +248,115 @@ if CLIENT then
                     selectedWaypoint = wp
                     destinationpos = wp.pos
                     destinationang = wp.ang
-
                     break
                 end
             end
         end
 
+        waypointList.OnRowRightClick = function(_, lineID, line)
+            local menu = DermaMenu()
+            menu:AddOption("Delete", function()
+                local name = line:GetColumnText(1)
+                for k, wp in ipairs(waypoints) do
+                    if wp.name == name then
+                        table.remove(waypoints, k)
+                        break
+                    end
+                end
+                waypointList:RemoveLine(lineID)
+                SaveWaypoints()
+            end):SetIcon("icon16/delete.png")
+            menu:Open()
+        end
 
+        addWaypointButton.DoClick = function()
+            local name = waypointNameEntry:GetValue()
+            if name == "" then
+                chat.AddText(Color(248, 134, 30), "[Tempad] Please enter a name for the waypoint!")
+                return
+            end
+            local ply = LocalPlayer()
+            local ang = ply:EyeAngles()
+            ang.p = 0 ang.r = 0
+            local wp = { name = name, pos = ply:GetPos(), ang = ang }
+            table.insert(waypoints, wp)
+            SaveWaypoints()
 
-		local customizationPanel = vgui.Create("DPanel", frame)
-		customizationPanel:SetSize(frameWidth * (1/3) - 20, frameHeight - 40)
-		customizationPanel:SetPos(frameWidth * (2/3) + 10, 30)
-		customizationPanel:SetBackgroundColor(Color(120, 80, 20))
+            local posStr = string.format("X: %.1f Y: %.1f Z: %.1f", wp.pos.x, wp.pos.y, wp.pos.z)
+            local angStr = string.format("Yaw: %.1f Pitch: %.1f", wp.ang.yaw, wp.ang.pitch)
+            waypointList:AddLine(name, posStr, angStr)
+            waypointNameEntry:SetText("")
+        end
 
-		-- Title Label
-		local titleLabel = vgui.Create("DLabel", customizationPanel)
-		titleLabel:SetText("Customisation")
-		titleLabel:SetFont("DermaLarge")
-		titleLabel:SizeToContents()
-		titleLabel:SetPos(10, 5)
+        -- RIGHT: Customization Panel
+        local customizationPanel = vgui.Create("DPanel", frame)
+        customizationPanel:SetSize(frameWidth / 3 - 20, frameHeight - 40)
+        customizationPanel:SetPos(frameWidth * (2 / 3) + 10, 30)
+        customizationPanel:SetBackgroundColor(Color(120, 80, 20))
 
-        -- Texture Panel instead of Model Preview
+        local titleLabel = vgui.Create("DLabel", customizationPanel)
+        titleLabel:SetText("Customisation")
+        titleLabel:SetFont("DermaLarge")
+        titleLabel:SizeToContents()
+        titleLabel:SetPos(10, 5)
+
         local previewWidth = customizationPanel:GetWide() - 200
         local previewHeight = previewWidth * 1.6
 
         local texturePanel = vgui.Create("DPanel", customizationPanel)
         texturePanel:SetSize(previewWidth, previewHeight)
         texturePanel:SetPos(10, 40)
+        texturePanel:SetBackgroundColor(customizationData.color or Color(255, 198, 114, 255))
 
-        texturePanel:SetBackgroundColor(Color(255, 198, 114, 255))
-
-        -- Custom paint to draw texture
         texturePanel.Paint = function(self, w, h)
             surface.SetDrawColor(self:GetBackgroundColor())
             surface.SetMaterial(Material("UI/timedoor_preview"))
             surface.DrawTexturedRect(0, 0, w, h)
         end
-        -- Color Checkbox
+
         local enableColor = vgui.Create("DCheckBoxLabel", customizationPanel)
         enableColor:SetText("Custom Color")
         enableColor:SetPos(10, texturePanel:GetY() + texturePanel:GetTall() + 10)
+        enableColor:SetValue(customizationData.useCustomColor or false)
         enableColor:SizeToContents()
 
-        -- Color Picker
         local colorPicker = vgui.Create("DColorMixer", customizationPanel)
         colorPicker:SetPos(10, enableColor:GetY() + 25)
         colorPicker:SetSize(customizationPanel:GetWide() - 20, 150)
         colorPicker:SetPalette(true)
         colorPicker:SetAlphaBar(true)
         colorPicker:SetWangs(true)
-        colorPicker:SetEnabled(false)
+        colorPicker:SetEnabled(enableColor:GetChecked())
+        colorPicker:SetColor(customizationData.color or Color(255, 198, 114, 255))
 
-        -- Function to update the texture color
         local function UpdateTextureColor()
             if not IsValid(texturePanel) then return end
-
-            if enableColor:GetChecked() then
-                local col = colorPicker:GetColor()
-                texturePanel:SetBackgroundColor(col)
-            else
-                texturePanel:SetBackgroundColor(Color(255, 198, 114, 255))
-            end
+            local col = enableColor:GetChecked() and colorPicker:GetColor() or Color(255, 198, 114, 255)
+            texturePanel:SetBackgroundColor(col)
+            customizationData.color = col
+            customizationData.useCustomColor = enableColor:GetChecked()
+            SaveCustomizations()
         end
 
-        -- Checkbox toggles the color picker and updates texture color
         enableColor.OnChange = function(_, val)
             colorPicker:SetEnabled(val)
             UpdateTextureColor()
         end
 
-        -- Color picker updates texture color live
         colorPicker.ValueChanged = function(_, color)
             UpdateTextureColor()
         end
 
-        -- Glitchy Checkbox
         local glitchyCheck = vgui.Create("DCheckBoxLabel", customizationPanel)
         glitchyCheck:SetText("Glitchy")
         glitchyCheck:SetPos(10, colorPicker:GetY() + colorPicker:GetTall() + 10)
+        glitchyCheck:SetValue(customizationData.glitchy or false)
         glitchyCheck:SizeToContents()
 
+        glitchyCheck.OnChange = function(_, val)
+            customizationData.glitchy = val
+            SaveCustomizations()
+        end
 
         -- BOTTOM BUTTON: Open Time Door
         local networked = vgui.Create("DButton", frame)
@@ -324,28 +365,22 @@ if CLIENT then
         networked:SetText("Open a Time Door to the destination.")
 
         networked.DoClick = function()
+            local function IsVector(val)
+                return getmetatable(val) == getmetatable(Vector(0, 0, 0))
+            end
 
-        	if enableColor:GetChecked() == true then
-        		sentcolor = colorPicker:GetColor()
-        	else 
-        		sentcolor = Color(255, 198, 114, 254)
-        	end
-
-			local function IsVector(val)
-			    return getmetatable(val) == getmetatable(Vector(0, 0, 0))
-			end
-
-		    if IsVector(destinationpos) then
-		        net.Start("TVA_CreateDoor")
-		            net.WriteVector(destinationpos)
-		            net.WriteAngle(destinationang)
-		            net.WriteColor(sentcolor,false)
-		            net.WriteBool(glitchyCheck:GetChecked())
-		        net.SendToServer()
-		        frame:Close()
-		    else
-		        chat.AddText(Color(248, 134, 30), "[Tempad] No destination set!")
-		    end
-		end
+            if IsVector(destinationpos) then
+                local colorToSend = enableColor:GetChecked() and colorPicker:GetColor() or Color(255, 198, 114, 254)
+                net.Start("TVA_CreateDoor")
+                    net.WriteVector(destinationpos)
+                    net.WriteAngle(destinationang)
+                    net.WriteColor(colorToSend, false)
+                    net.WriteBool(glitchyCheck:GetChecked())
+                net.SendToServer()
+                frame:Close()
+            else
+                chat.AddText(Color(248, 134, 30), "[Tempad] No destination set!")
+            end
+        end
     end
 end
