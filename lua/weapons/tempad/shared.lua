@@ -168,7 +168,14 @@ if CLIENT then
         if file.Exists("TVA/tempad_customisations.txt", "DATA") then
             local json = file.Read("TVA/tempad_customisations.txt", "DATA")
             local tbl = util.JSONToTable(json)
-            if tbl then customizationData = tbl end
+            if tbl then
+                customizationData = tbl
+                -- Fix color table: convert to Color object if needed
+                if customizationData.color and not istable(customizationData.color.r) then
+                    local c = customizationData.color
+                    customizationData.color = Color(c.r or 255, c.g or 198, c.b or 114, c.a or 255)
+                end
+            end
         end
     end
 
