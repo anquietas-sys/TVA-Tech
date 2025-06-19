@@ -189,7 +189,8 @@ if CLIENT then
         LoadCustomizations()
 
         local frameWidth = ScrW() / 2
-        local frameHeight = ScrH() / 2
+        local frameHeight = ScrH() / 1.5
+
 
         local frame = vgui.Create("DFrame")
         frame:SetSize(frameWidth, frameHeight)
