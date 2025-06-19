@@ -95,7 +95,19 @@ function ENT:StartTouch(ent)
         self:OnPlayerPass(ent)
     end
 
-    if config.Blacklist[ent:GetClass()] != true then
+    local classtest = string.Trim(ent:GetClass())
+
+    local parenttest = ent:GetParent()
+    local parentClasstest = IsValid(parenttest) and string.Trim(parenttest:GetClass()) or nil
+
+   -- print("[DEBUG] Entity class: >" .. classtest .. "<")
+   -- print("[DEBUG] Parent class: >" .. (parentClasstest or "none") .. "<")
+
+
+    local blacklisted = config.Blacklist[classtest] or (parentClasstest and config.Blacklist[parentClasstest])
+   -- print("[DEBUG] Blacklisted:", tostring(blacklisted))
+
+    if not blacklisted then
         local propSize = ent:OBBMaxs() - ent:OBBMins()
         local doorSize = self:OBBMaxs() - self:OBBMins()
 
@@ -119,7 +131,7 @@ function ENT:StartTouch(ent)
 end
 
 function ENT:OnPlayerPass(ply)
-  //  print(ply:Nick() .. " entered a Time Door.")
+  --  print(ply:Nick() .. " entered a Time Door.")
 
     SoundScripts.PlayTravelSound(self:GetPos())
 
@@ -128,14 +140,14 @@ function ENT:OnPlayerPass(ply)
     end
 
     if CurTime() >= ply.TimeDoorCooldown then
-        // Player is entering time door
+        -- Player is entering time door
         ply.TimeDoorCooldown = CurTime() + 0.1
         TeleportFunctions.Teleport(ply, self, self.Partner)
     end
 end
 
 function ENT:OnSmallPropPass(prop)
-  //  print("A small prop passed through a Time Door: " .. tostring(prop))
+  --  print("A small prop passed through a Time Door: " .. tostring(prop))
     SoundScripts.PlayTravelSound(self:GetPos())
 
     if prop.TimeDoorCooldown == nil then
@@ -143,7 +155,6 @@ function ENT:OnSmallPropPass(prop)
     end
 
     if CurTime() >= prop.TimeDoorCooldown then
-        // Player is entering time door
         prop.TimeDoorCooldown = CurTime() + 0.1
         TeleportFunctions.Teleport(prop, self, self.Partner)
     end
