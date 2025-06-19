@@ -10,6 +10,7 @@ config.Blacklist = {
     ["prop_door"] = true,
     ["prop_dynamic"] = false,
     ["prop_door_rotating"] = true,
+    ["prop_physics_multiplayer"] = false,
 
     ['apollopanel'] = true,
     ['timedoor'] = true,
