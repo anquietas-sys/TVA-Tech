@@ -180,6 +180,11 @@ if CLIENT then
     end
 
     function SWEP:OpenMenu()
+
+        if (game.SinglePlayer()) != true then
+            if not IsFirstTimePredicted() then return end
+        end
+        
         LoadWaypoints()
         LoadCustomizations()
 
