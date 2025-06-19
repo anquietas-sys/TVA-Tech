@@ -66,14 +66,15 @@ function SWEP:PrimaryAttack()
         if tr.Hit then
             local hitEnt = tr.Entity
 
-            if config.Blacklist[hitEnt:GetClass()] == true then
+            if config.Blacklist[hitEnt:GetClass()] then
+                print("fuck")
                 -- do nothing
             else
                 if IsValid(hitEnt) then
                     local constrainedEnts = constraint.GetAllConstrainedEntities(hitEnt)
 
                     for ent, _ in pairs(constrainedEnts) do
-                        if IsValid(ent) and (ent:GetClass() ~= "worldspawn") and (config.Blacklist[ent:GetClass()] == false) then
+                        if IsValid(ent) and (ent:GetClass() ~= "worldspawn") and (config.Blacklist[ent:GetClass()] != true) then
                             local dmg = DamageInfo()
                             dmg:SetAttacker(owner)
                             dmg:SetInflictor(self)
