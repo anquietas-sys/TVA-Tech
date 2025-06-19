@@ -36,7 +36,7 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
     if not (IsValid(traveller) and IsValid(entrance) and IsValid(exit)) then return end
 
      -- Prevent teleport if entrance or exit is outside the map bounds
-    if not util.IsInWorld(entrance:GetPos()) or not util.IsInWorld(exit:GetPos()) then
+    if not util.IsInWorld(entrance:LocalToWorld(entrance:OBBCenter())) or not util.IsInWorld(exit:LocalToWorld(exit:OBBCenter())) then
         print("Time Door", entrance, "Tried to teleport", traveller, "to point outside the map at", exit)
         return
     end
