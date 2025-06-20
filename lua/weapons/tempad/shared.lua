@@ -80,6 +80,7 @@ if SERVER then
     local destAng = net.ReadAngle()
     local color = net.ReadColor(false)
     local glitch = net.ReadBool()
+    local autocloseTime = net.ReadFloat() or 20
 
     if glitch == false then
     	classname = "timedoor"
@@ -116,6 +117,14 @@ if SERVER then
         undo.AddEntity(door2)
         undo.SetPlayer(ply)
     undo.Finish()
+
+    timer.Simple(autocloseTime, function()
+        if IsValid(door1) then
+            door1:CloseDoor(true)
+            door2:CloseDoor(true)
+        end
+    end)
+
 	end)
 end
 
@@ -371,6 +380,20 @@ if CLIENT then
             SaveCustomizations()
         end
 
+        local autocloseSlider = vgui.Create("DNumSlider", customizationPanel)
+        autocloseSlider:SetText("Auto-close Time")
+        autocloseSlider:SetMin(1)
+        autocloseSlider:SetMax(60)
+        autocloseSlider:SetDecimals(0)
+        autocloseSlider:SetValue(customizationData.autocloseTime or 20)
+        autocloseSlider:SetSize(customizationPanel:GetWide() - 20, 30)
+        autocloseSlider:SetPos(10, glitchyCheck:GetY() + glitchyCheck:GetTall() + 10)
+
+        autocloseSlider.OnValueChanged = function(_, val)
+            customizationData.autocloseTime = math.Round(val)
+            SaveCustomizations()
+        end
+
         -- BOTTOM BUTTON: Open Time Door
         local networked = vgui.Create("DButton", frame)
         networked:SetHeight(frameHeight / 10)
@@ -389,6 +412,7 @@ if CLIENT then
                     net.WriteAngle(destinationang)
                     net.WriteColor(colorToSend, false)
                     net.WriteBool(glitchyCheck:GetChecked())
+                    net.WriteFloat(autocloseSlider:GetValue())
                 net.SendToServer()
                 frame:Close()
             else
