@@ -14,6 +14,7 @@ config.Blacklist = {
 
     ['apollopanel'] = true,
     ['timedoor'] = true,
+    ['gmt_instrument_piano'] = true,
 }
 
 
