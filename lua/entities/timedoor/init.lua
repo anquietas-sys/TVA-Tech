@@ -114,7 +114,10 @@ function ENT:StartTouch(ent)
         local propLongest = math.max(propSize.x, propSize.y, propSize.z)
         local doorLongest = math.max(doorSize.x, doorSize.y, doorSize.z)
 
-        if propLongest <= (doorLongest * 2) then
+        local phys = ent:GetPhysicsObject()
+
+
+        if propLongest <= (doorLongest * 2) and phys:IsMotionEnabled() then
             self:OnSmallPropPass(ent)
         end
     end
