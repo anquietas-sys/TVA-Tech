@@ -30,6 +30,7 @@ function ENT:Initialize()
 
     self:SetNWBool("Open", false)
     self:SetNWBool("FullyClosed", true)
+    self:SetNWBool("Glitchy", false)
     self.Partner = nil
     self.Glitchy = false
 
@@ -74,19 +75,6 @@ function ENT:TriggerInput( name, value )
         end
     end
 end
-
---[[ function ENT:Use(activator, caller, usetype, value)
-    if CurTime() >= self.UseCooldown then
-        self.DebugTrigger = !self.DebugTrigger
-        self:SetTrigger(self.DebugTrigger)
-
-        Entity(1):ChatPrint(tostring(self.DebugTrigger))
-
-        self.UseCooldown = CurTime() + 1
-
-        self:PostUse(activator, caller, usetype, value)
-    end
-end--]] 
 
 function ENT:StartTouch(ent)
     if not IsValid(ent) then return end
@@ -222,7 +210,7 @@ end
 
 function ENT:MakeGlitchy(glitchy)
     self.Glitchy = glitchy
-
+    self:SetNWBool("Glitchy", glitchy)
     if glitchy == true then
         self:SetRenderFX(15)
         self:SetColor(Color(255, 168, 63, 254))

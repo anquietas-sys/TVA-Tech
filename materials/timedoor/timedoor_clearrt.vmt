@@ -1,0 +1,6 @@
+UnlitGeneric
+{
+	$basetexture "lights/white"
+	$color "[1000 0 0]"
+	$ignorez 1
+}
