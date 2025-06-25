@@ -76,65 +76,69 @@ function ENT:TriggerInput( name, value )
     end
 end
 
-function ENT:EndTouch(ent)
+function ENT:StartTouch(ent)
     if not IsValid(ent) then return end
     if not self:GetNWBool("Open") then return end
+    if ent:IsPlayer() then
+        self:OnPlayerPass(ent)
+    end
 
-    -- First, check if the entity has just been teleported here
-    if ent.TimeDoorNext != self then
-        -- If this is their first teleport, send them through!
-        if ent:IsPlayer() then
-            self:OnPlayerPass(ent)
+    local classtest = string.Trim(ent:GetClass())
+
+    local parenttest = ent:GetParent()
+    local parentClasstest = IsValid(parenttest) and string.Trim(parenttest:GetClass()) or nil
+
+   -- print("[DEBUG] Entity class: >" .. classtest .. "<")
+   -- print("[DEBUG] Parent class: >" .. (parentClasstest or "none") .. "<")
+
+
+    local blacklisted = config.Blacklist[classtest] or (parentClasstest and config.Blacklist[parentClasstest])
+   -- print("[DEBUG] Blacklisted:", tostring(blacklisted))
+
+    if not blacklisted then
+        local propSize = ent:OBBMaxs() - ent:OBBMins()
+        local doorSize = self:OBBMaxs() - self:OBBMins()
+
+        local propLongest = math.max(propSize.x, propSize.y, propSize.z)
+        local doorLongest = math.max(doorSize.x, doorSize.y, doorSize.z)
+
+        local phys = ent:GetPhysicsObject()
+
+
+        if propLongest <= (doorLongest * 2) and phys:IsMotionEnabled() then
+            self:OnSmallPropPass(ent)
         end
+    end
 
-        local classtest = string.Trim(ent:GetClass())
+    // Checks if the current entity's base class (parent) is 'timedoor'
+    local entTable = scripted_ents.Get(ent:GetClass())
 
-        local parenttest = ent:GetParent()
-        local parentClasstest = IsValid(parenttest) and string.Trim(parenttest:GetClass()) or nil
-
-        local blacklisted = config.Blacklist[classtest] or (parentClasstest and config.Blacklist[parentClasstest])
-
-        if not blacklisted then
-            local propSize = ent:OBBMaxs() - ent:OBBMins()
-            local doorSize = self:OBBMaxs() - self:OBBMins()
-
-            local propLongest = math.max(propSize.x, propSize.y, propSize.z)
-            local doorLongest = math.max(doorSize.x, doorSize.y, doorSize.z)
-
-            local phys = ent:GetPhysicsObject()
-
-
-            if propLongest <= (doorLongest * 2) and phys:IsMotionEnabled() then
-                self:OnSmallPropPass(ent)
-            end
-        end
-
-        -- Debug code to link timedoors spawned in the menu
-        local entTable = scripted_ents.Get(ent:GetClass())
-
-        if (ent:GetClass() == "timedoor") or (entTable and entTable.Base == "timedoor") then
-            self.Partner = ent
-            ent.Partner = self
-        end
-    else
-        -- The entity was just teleported here, so let's not send them through.
-
-        -- Reset the next time door, and prevent the rest of the function from running.
-        ent.TimeDoorNext = nil
+    if (ent:GetClass() == "timedoor") or (entTable and entTable.Base == "timedoor") then
+        self.Partner = ent
+        ent.Partner = self
     end
 
     self:PostStartTouch(ent)
 end
 
 function ENT:OnPlayerPass(ply)
+  --  print(ply:Nick() .. " entered a Time Door.")
+
     SoundScripts.PlayTravelSound(self:GetPos())
-    
-    -- Register the partner door with the player and send them through.
-    ply.TimeDoorNext = self.Partner
-    TeleportFunctions.Teleport(ply, self, self.Partner)
+
+    if ply.TimeDoorCooldown == nil then
+        ply.TimeDoorCooldown = CurTime()
+    end
+
+    if CurTime() >= ply.TimeDoorCooldown then
+        -- Player is entering time door
+        ply.TimeDoorCooldown = CurTime() + 0.1
+        TeleportFunctions.Teleport(ply, self, self.Partner)
+    end
 end
 
 function ENT:OnSmallPropPass(prop)
+  --  print("A small prop passed through a Time Door: " .. tostring(prop))
     SoundScripts.PlayTravelSound(self:GetPos())
 
     if prop.TimeDoorCooldown == nil then
