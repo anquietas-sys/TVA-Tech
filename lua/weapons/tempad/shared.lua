@@ -69,76 +69,61 @@ end
 
 // Will only run on the server.
 if SERVER then
-	util.AddNetworkString("TVA_CreateDoor") // Add a new net message into the pool, so we can use this net message later
-	// P.S. I can see this creating issues in multiplayer, it might try to call this over and over so be aware
-	// 		For now though, it'll do.
+	util.AddNetworkString("TVA_CreateDoor") 
 
-	// Specify what to do when the server recieves the 'TVA_CreateDoor' net message:
-	// 		(len is useless, it's the net message length)
 	net.Receive("TVA_CreateDoor", function(len, ply)
-    local destPos = net.ReadVector()
-    local destAng = net.ReadAngle()
-    local color = net.ReadColor(false)
-    local glitch = net.ReadBool()
-    local autocloseTime = net.ReadFloat() or 20
+        local destPos = net.ReadVector()
+        local destAng = net.ReadAngle()
+        local color = net.ReadColor(false)
+        local glitch = net.ReadBool()
+        local autocloseTime = net.ReadFloat() or 20
+        local doAutoClose = net.ReadBool()
 
-    if glitch == false then
-    	classname = "timedoor"
-    else
-    	classname = "timedoorglitchy"
-    end
-
-    // print(classname)
-
-    if not destPos or not destAng then
-        ply:ChatPrint("Invalid destination data.")
-        return
-    end
-
-    -- Create the first door at where the player is looking
-    local door1 = ents.Create(classname)
-    door1:SetPos(ply:GetEyeTrace().HitPos)
-    door1:SetAngles(ply:GetForward():Angle())
-    door1:Spawn()
-
-    -- Create the second door at the destination received
-    local door2 = ents.Create(classname)
-    door2:SetPos(destPos)
-    door2:SetAngles(destAng)
-    door2:Spawn()
-
-    door1.Partner = door2
-    door2.Partner = door1
-    door1:SetColor(color)
-    door2:SetColor(color)
-
-    undo.Create("Time Door")
-        undo.AddEntity(door1)
-        undo.AddEntity(door2)
-        undo.SetPlayer(ply)
-    undo.Finish()
-
-    timer.Simple(autocloseTime, function()
-        if IsValid(door1) then
-            door1:CloseDoor(true)
-            door2:CloseDoor(true)
+        if glitch == false then
+        	classname = "timedoor"
+        else
+        	classname = "timedoorglitchy"
         end
-    end)
 
+        if not destPos or not destAng then
+            ply:ChatPrint("Invalid destination data.")
+            return
+        end
+
+        -- Create the first door at where the player is looking
+        local door1 = ents.Create(classname)
+        door1:SetPos(ply:GetEyeTrace().HitPos)
+        door1:SetAngles(ply:GetForward():Angle())
+        door1:Spawn()
+
+        -- Create the second door at the destination received
+        local door2 = ents.Create(classname)
+        door2:SetPos(destPos)
+        door2:SetAngles(destAng)
+        door2:Spawn()
+
+        door1.Partner = door2
+        door2.Partner = door1
+        door1:SetColor(color)
+        door2:SetColor(color)
+
+        undo.Create("Time Door")
+            undo.AddEntity(door1)
+            undo.AddEntity(door2)
+            undo.SetPlayer(ply)
+        undo.Finish()
+
+        if doAutoClose then
+            timer.Simple(autocloseTime, function()
+                if IsValid(door1) then
+                    door1:CloseDoor(true)
+                    door2:CloseDoor(true)
+                end
+            end)
+        end
 	end)
 end
 
-if CLIENT then
-	function SWEP:CloseDoor()
-
-	end
-end
-
-
-
-
-// Will only run on the client. I put this at the bottom because clientside code (especially vgui stuff) takes a lot of space;
-//    Space I doubt you want to wade through to get to literally any other code haha	
 if CLIENT then
     local waypoints = {}
 
@@ -380,6 +365,17 @@ if CLIENT then
             SaveCustomizations()
         end
 
+        local autoCloseToggle = vgui.Create("DCheckBoxLabel", customizationPanel)
+        autoCloseToggle:SetPos(10, glitchyCheck:GetY() + glitchyCheck:GetTall() + 20)
+        autoCloseToggle:SetText("Auto Close?")
+        autoCloseToggle:SizeToContents()
+        autoCloseToggle:SetValue(customizationData.autoCloseToggle or true)
+
+        autoCloseToggle.OnChange = function(_, val)
+            customizationData.autoCloseToggle = val
+            SaveCustomizations()
+        end
+
         local autocloseSlider = vgui.Create("DNumSlider", customizationPanel)
         autocloseSlider:SetText("Auto-close Time")
         autocloseSlider:SetMin(1)
@@ -387,7 +383,7 @@ if CLIENT then
         autocloseSlider:SetDecimals(0)
         autocloseSlider:SetValue(customizationData.autocloseTime or 20)
         autocloseSlider:SetSize(customizationPanel:GetWide() - 20, 30)
-        autocloseSlider:SetPos(10, glitchyCheck:GetY() + glitchyCheck:GetTall() + 10)
+        autocloseSlider:SetPos(10, autoCloseToggle:GetY() + autoCloseToggle:GetTall() + 1)
 
         autocloseSlider.OnValueChanged = function(_, val)
             customizationData.autocloseTime = math.Round(val)
@@ -413,6 +409,7 @@ if CLIENT then
                     net.WriteColor(colorToSend, false)
                     net.WriteBool(glitchyCheck:GetChecked())
                     net.WriteFloat(autocloseSlider:GetValue())
+                    net.WriteBool(autoCloseToggle:GetChecked())
                 net.SendToServer()
                 frame:Close()
             else

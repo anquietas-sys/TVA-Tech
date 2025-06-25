@@ -46,8 +46,14 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
     local entVel = traveller:GetVelocity()
 
     -- Transform position relative to entrance
-    local relPos = WorldToLocal(entPos, Angle(), entrance:GetPos(), entrance:GetAngles())
-    local newPos = LocalToWorld(relPos, Angle(), exit:GetPos(), exit:GetAngles())
+    local newPos = nil
+    if !traveller:IsPlayer() then
+        local relPos = WorldToLocal(entPos, Angle(), entrance:GetPos(), entrance:GetAngles())
+        newPos = LocalToWorld(relPos, Angle(), exit:GetPos(), exit:GetAngles())
+    else
+        -- Prevents a bug where players can end up way behind the door in certain scenarios
+        newPos = exit:GetPos()
+    end
 
     -- Transform velocity relative to entrance into local space
     local localVel = WorldToLocal(entVel, Angle(), Vector(0, 0, 0), entrance:GetAngles())
@@ -63,7 +69,6 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
 
     if traveller:IsPlayer() then
         traveller:SetEyeAngles(newAng)
-        traveller:SetVelocity(-traveller:GetVelocity()) -- Cancel movement
         traveller:SetVelocity(newVel)
     else
         traveller:SetAngles(newAng)
