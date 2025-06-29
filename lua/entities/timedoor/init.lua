@@ -128,6 +128,10 @@ end
 
 function ENT:OnPlayerPass(ply)
     SoundScripts.PlayTravelSound(self:GetPos())
+
+    if self.Partner != nil and IsValid(self.Partner) and IsEntity(self.Partner) then
+        SoundScripts.PlayTravelSound(self.Partner:GetPos())
+    end
     
     -- Register the partner door with the player and send them through.
     ply.TimeDoorNext = self.Partner
@@ -137,6 +141,10 @@ end
 function ENT:OnSmallPropPass(prop)
     SoundScripts.PlayTravelSound(self:GetPos())
 
+    if self.Partner != nil and IsValid(self.Partner) and IsEntity(self.Partner) then
+        SoundScripts.PlayTravelSound(self.Partner:GetPos())
+    end
+    
     if prop.TimeDoorCooldown == nil then
         prop.TimeDoorCooldown = CurTime()
     end
