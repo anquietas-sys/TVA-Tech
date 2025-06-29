@@ -63,7 +63,11 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
     local entranceAng = entrance:GetAngles()
     local exitAng = exit:GetAngles()
 
-    local entAngWorld = traveller:IsPlayer() and traveller:EyeAngles() or traveller:GetAngles()
+    if traveller:IsPlayer() then 
+        entAngWorld = traveller:EyeAngles()
+    else 
+        entAngWorld = traveller:GetAngles()
+    end
 
     -- Convert world angle to local (relative to entrance)
     local localAng = entAngWorld - entranceAng
@@ -75,11 +79,21 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
     traveller:SetPos(newPos)
 
     if traveller:IsPlayer() then
-        local exitYaw = exit:GetAngles().y
-        local playerYaw = (exitYaw + 180) % 360 -- ensure yaw stays in 0-360 range
-        local pitch = traveller:EyeAngles().p -- keep pitch unchanged
-        traveller:SetEyeAngles(Angle(pitch, playerYaw, 0))
-        traveller:SetVelocity(newVel)
+        local currentVelocity = -(traveller:GetVelocity())
+
+        timer.Simple(0, function()
+            if not IsValid(traveller) then return end
+
+            -- Use fully transformed pitch and yaw for eye angles
+            traveller:SetEyeAngles(Angle(transformedAng.p, transformedAng.y, 0))
+
+            -- Set player model yaw (pitch and roll 0 to keep upright)
+            traveller:SetAngles(Angle(0, transformedAng.y, 0))
+
+            -- Set velocity (zero then apply new velocity)
+            traveller:SetLocalVelocity(Vector(0,0,0))
+            traveller:SetVelocity(newVel)
+        end)
     else
         local entAng = traveller:GetAngles()
         local entranceAng = entrance:GetAngles()
@@ -95,6 +109,7 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
         traveller:SetAngles(newAng)
         local phys = traveller:GetPhysicsObject()
         if IsValid(phys) then
+            phys:SetVelocity(Vector(0,0,0))
             phys:SetVelocity(newVel)
         end
     end

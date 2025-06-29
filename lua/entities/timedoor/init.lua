@@ -135,6 +135,16 @@ function ENT:OnPlayerPass(ply)
     
     -- Register the partner door with the player and send them through.
     ply.TimeDoorNext = self.Partner
+
+
+    ply:ScreenFade(SCREENFADE.IN, Color(
+        math.Clamp(self:GetColor().r * 0.5, 0, 255),
+        math.Clamp(self:GetColor().g * 0.5, 0, 255),
+        math.Clamp(self:GetColor().b * 0.5, 0, 255),
+        255 -- fully opaque fade
+    ), 0.2, 0)
+
+
     TeleportFunctions.Teleport(ply, self, self.Partner)
 end
 
