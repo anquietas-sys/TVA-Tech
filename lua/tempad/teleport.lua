@@ -59,18 +59,39 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
     local localVel = WorldToLocal(entVel, Angle(), Vector(0, 0, 0), entrance:GetAngles())
     local newVel = LocalToWorld(localVel, Angle(), Vector(0, 0, 0), exit:GetAngles())
 
-    -- Transform view direction properly (avoid pitch inversion)
-    local localForward = WorldToLocal(entAng:Forward(), Angle(), Vector(0, 0, 0), entrance:GetAngles())
-    local exitForward = LocalToWorld(localForward, Angle(), Vector(0, 0, 0), exit:GetAngles())
-    local newAng = exitForward:Angle()
+    -- Compute relative angle between entrance and entity
+    local entranceAng = entrance:GetAngles()
+    local exitAng = exit:GetAngles()
+
+    local entAngWorld = traveller:IsPlayer() and traveller:EyeAngles() or traveller:GetAngles()
+
+    -- Convert world angle to local (relative to entrance)
+    local localAng = entAngWorld - entranceAng
+
+    -- Apply local angle relative to exit
+    local transformedAng = localAng + exitAng
 
     -- Apply teleport
     traveller:SetPos(newPos)
 
     if traveller:IsPlayer() then
-        traveller:SetEyeAngles(newAng)
+        local exitYaw = exit:GetAngles().y
+        local playerYaw = (exitYaw + 180) % 360 -- ensure yaw stays in 0-360 range
+        local pitch = traveller:EyeAngles().p -- keep pitch unchanged
+        traveller:SetEyeAngles(Angle(pitch, playerYaw, 0))
         traveller:SetVelocity(newVel)
     else
+        local entAng = traveller:GetAngles()
+        local entranceAng = entrance:GetAngles()
+        local exitAng = exit:GetAngles()
+
+        -- Calculate the local angle of the prop relative to the entrance portal
+        local localAng = entAng - entranceAng
+
+        -- Reapply this local angle relative to the exit portal
+        local newAng = localAng + exitAng
+
+        -- Set the new angle on the entity
         traveller:SetAngles(newAng)
         local phys = traveller:GetPhysicsObject()
         if IsValid(phys) then
