@@ -15,6 +15,13 @@ config.Blacklist = {
     ['apollopanel'] = true,
     ['timedoor'] = true,
     ['gmt_instrument_piano'] = true,
+    ['stargate_base'] = true,
+    ['stargate_atlantis'] = true,
+    ['stargate_infinity'] = true,
+    ['stargate_iris'] = true,
+    ['stargate_movie'] = true,
+    ['stargate_orlin'] = true,
+    ['stargate_sg1'] = true,
 }
 
 
