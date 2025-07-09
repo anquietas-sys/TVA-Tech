@@ -8,8 +8,13 @@ local config = include("tempad/config.lua")
 
 // Setting these up so that our children entities can use them without overriding the original logic
 function ENT:PostInitialize() end
-function ENT:PostUse(activator, caller, usetype, value) end
 function ENT:PostStartTouch(activator) end
+
+function ENT:Dot(ent)
+    local up = self:GetForward()
+    local dir = ent:GetPos()-self:GetPos()
+    return up:Dot(dir:GetNormalized())
+end
 
 function ENT:Initialize()
     self:SetModel("models/timedoor/timedoor.mdl")
@@ -33,10 +38,9 @@ function ENT:Initialize()
     self:SetNWBool("Glitchy", false)
     self.Partner = nil
     self.Glitchy = false
+    self.TouchingEntities = {}
 
     self.DebugTrigger = true
-
-    self.UseCooldown = CurTime()
 
     self:PostInitialize()
 
@@ -54,8 +58,6 @@ function ENT:Initialize()
             "Partner (Links this Time Door to another Time Door.) [ENTITY]",
             "Open (Controls if the Time Door is open.) [NORMAL]",
         })
-    else
-        -- do nothing
     end
 
 end
@@ -80,50 +82,79 @@ function ENT:EndTouch(ent)
     if not IsValid(ent) then return end
     if not self:GetNWBool("Open") then return end
 
-    -- First, check if the entity has just been teleported here
-    if ent.TimeDoorNext != self then
-        -- If this is their first teleport, send them through!
-        if ent:IsPlayer() then
-            self:OnPlayerPass(ent)
+    -- Under certain circumstances, especially with high velocities, Touch() can miss the calculation on some entities.
+    -- Below is a fallback in case that happens.
+    if (self.TouchingEntities[ent] != nil and self.TouchingEntities[ent] != false and ent.NextTimeDoor != self) then
+        local dot = self:Dot(ent)
+        local initialDot = self.TouchingEntities[ent]
+
+        -- This one is more sensitive. If the difference is above 0.5, run the teleport. We still want to be able to edge the door.
+        if (math.abs(dot-initialDot) >= 0.5) then
+            self:PrepareTeleport(ent)
         end
-
-        local classtest = string.Trim(ent:GetClass())
-
-        local parenttest = ent:GetParent()
-        local parentClasstest = IsValid(parenttest) and string.Trim(parenttest:GetClass()) or nil
-
-        local blacklisted = config.Blacklist[classtest] or (parentClasstest and config.Blacklist[parentClasstest])
-
-        if not blacklisted then
-            local propSize = ent:OBBMaxs() - ent:OBBMins()
-            local doorSize = self:OBBMaxs() - self:OBBMins()
-
-            local propLongest = math.max(propSize.x, propSize.y, propSize.z)
-            local doorLongest = math.max(doorSize.x, doorSize.y, doorSize.z)
-
-            local phys = ent:GetPhysicsObject()
-
-
-            if propLongest <= (doorLongest * 2) and phys:IsMotionEnabled() then
-                self:OnSmallPropPass(ent)
-            end
-        end
-
-        -- Debug code to link timedoors spawned in the menu
-        local entTable = scripted_ents.Get(ent:GetClass())
-
-        if (ent:GetClass() == "timedoor") or (entTable and entTable.Base == "timedoor") then
-            self.Partner = ent
-            ent.Partner = self
-        end
-    else
-        -- The entity was just teleported here, so let's not send them through.
-
-        -- Reset the next time door, and prevent the rest of the function from running.
-        ent.TimeDoorNext = nil
     end
 
-    self:PostStartTouch(ent)
+    -- Clear this so we can walk back through the door
+    if ent.NextTimeDoor == self then ent.NextTimeDoor = nil end
+    -- Clear the previous dot product for this entity, we no longer need it.
+    self.TouchingEntities[ent] = false
+
+    self:PostStartTouch(ent) 
+end
+
+function ENT:StartTouch(ent)
+    if not IsValid(ent) then return end
+    if not self:GetNWBool("Open") then return end
+
+    -- Set our initial dot product for this entity. We'll use it later.
+    self.TouchingEntities[ent] = self:Dot(ent)
+end
+
+function ENT:Touch(ent)
+    if not IsValid(ent) then return end
+    if not self:GetNWBool("Open") then return end
+    if self.TouchingEntities[ent] == false then return end
+    if ent.NextTimeDoor == self then return end
+    
+    local dot = self:Dot(ent)
+    local initialDot = self.TouchingEntities[ent]
+
+    -- Think of the below like the 'difference' between the initial dot value and the current one.
+    -- if the difference is above 1, run the teleport. 1 is the point that the dot values flip from positive to negative.
+    if (math.abs(dot-initialDot) >= 1) then
+        self:PrepareTeleport(ent)
+    end
+end
+
+function ENT:PrepareTeleport(ent)
+    if ent.NextTimeDoor == self then return end
+
+    ent.NextTimeDoor = self.Partner
+
+    -- If the entity is a player, skip the BS and teleport them.
+    if ent:IsPlayer() then
+        self:OnPlayerPass(ent)
+    end
+
+    -- Make sure that the entity isn't blacklisted
+    local classtest = string.Trim(ent:GetClass())
+    local parenttest = ent:GetParent()
+    local parentClasstest = IsValid(parenttest) and string.Trim(parenttest:GetClass()) or nil
+    local blacklisted = config.Blacklist[classtest] or (parentClasstest and config.Blacklist[parentClasstest])
+    if not blacklisted then
+        local propSize = ent:OBBMaxs() - ent:OBBMins()
+        local doorSize = self:OBBMaxs() - self:OBBMins()
+
+        local propLongest = math.max(propSize.x, propSize.y, propSize.z)
+        local doorLongest = math.max(doorSize.x, doorSize.y, doorSize.z)
+
+        local phys = ent:GetPhysicsObject()
+
+        -- Make sure the entity fits, if it does, send it through!
+        if propLongest <= (doorLongest * 2) and phys:IsMotionEnabled() then
+            self:OnSmallPropPass(ent)
+        end
+    end
 end
 
 function ENT:OnPlayerPass(ply)
@@ -136,15 +167,13 @@ function ENT:OnPlayerPass(ply)
     -- Register the partner door with the player and send them through.
     ply.TimeDoorNext = self.Partner
 
-
     ply:ScreenFade(SCREENFADE.IN, Color(
         math.Clamp(self:GetColor().r * 0.5, 0, 255),
         math.Clamp(self:GetColor().g * 0.5, 0, 255),
         math.Clamp(self:GetColor().b * 0.5, 0, 255),
         255 -- fully opaque fade
     ), 0.2, 0)
-
-
+    
     TeleportFunctions.Teleport(ply, self, self.Partner)
 end
 
