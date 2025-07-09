@@ -127,6 +127,8 @@ function ENT:Touch(ent)
 end
 
 function ENT:PrepareTeleport(ent)
+    if !IsValid(ent) or !IsEntity(ent) or ent == nil then return end
+
     if ent.NextTimeDoor == self then return end
 
     ent.NextTimeDoor = self.Partner
@@ -150,6 +152,7 @@ function ENT:PrepareTeleport(ent)
 
         local phys = ent:GetPhysicsObject()
 
+        if !IsValid(phys) or phys == nil then return end
         -- Make sure the entity fits, if it does, send it through!
         if propLongest <= (doorLongest * 2) and phys:IsMotionEnabled() then
             self:OnSmallPropPass(ent)
