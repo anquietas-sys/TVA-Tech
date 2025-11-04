@@ -77,6 +77,7 @@ function TeleportFunctions.Teleport(traveller, entrance, exit)
 
     -- Apply teleport
     traveller:SetPos(newPos)
+    print(traveller, "used Time Door:", entrance, "to teleport to", exit)
 
     if traveller:IsPlayer() then
         local currentVelocity = -(traveller:GetVelocity())

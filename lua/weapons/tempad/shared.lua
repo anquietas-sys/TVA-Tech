@@ -69,6 +69,9 @@ end
 
 // Will only run on the server.
 if SERVER then
+
+    CreateConVar("tempad_do_cooldown", 0, FCVAR_REPLICATED, "Boolean, determines if the Tempad should have a cooldown between opening doors.", 0, 1)
+
 	util.AddNetworkString("TVA_CreateDoor") 
 
 	net.Receive("TVA_CreateDoor", function(len, ply)
@@ -78,6 +81,7 @@ if SERVER then
         local glitch = net.ReadBool()
         local autocloseTime = net.ReadFloat() or 20
         local doAutoClose = net.ReadBool()
+        local user = net.ReadPlayer()
 
         if glitch == false then
         	classname = "timedoor"
@@ -107,6 +111,8 @@ if SERVER then
         door1:SetColor(color)
         door2:SetColor(color)
 
+        print("Player", user:Nick(), "[", user:SteamID(), "] opened Time Doors", door1, "and", door2)
+
         undo.Create("Time Door")
             undo.AddEntity(door1)
             undo.AddEntity(door2)
@@ -116,6 +122,7 @@ if SERVER then
         if doAutoClose then
             timer.Simple(autocloseTime, function()
                 if IsValid(door1) then
+                    print("Autoclosing Time Doors", door1, door2)
                     door1:CloseDoor(true)
                     door2:CloseDoor(true)
                 end
@@ -390,6 +397,11 @@ if CLIENT then
             SaveCustomizations()
         end
 
+
+        -- Cooldown function for servers
+
+        ChargeTime = 90
+
         -- BOTTOM BUTTON: Open Time Door
         local networked = vgui.Create("DButton", frame)
         networked:SetHeight(frameHeight / 10)
@@ -401,20 +413,42 @@ if CLIENT then
                 return getmetatable(val) == getmetatable(Vector(0, 0, 0))
             end
 
-            if IsVector(destinationpos) then
-                local colorToSend = enableColor:GetChecked() and colorPicker:GetColor() or Color(255, 198, 114, 254)
-                net.Start("TVA_CreateDoor")
-                    net.WriteVector(destinationpos)
-                    net.WriteAngle(destinationang)
-                    net.WriteColor(colorToSend, false)
-                    net.WriteBool(glitchyCheck:GetChecked())
-                    net.WriteFloat(autocloseSlider:GetValue())
-                    net.WriteBool(autoCloseToggle:GetChecked())
-                net.SendToServer()
-                frame:Close()
-            else
-                chat.AddText(Color(248, 134, 30), "[Tempad] No destination set!")
+
+
+            local function CreateDoor()
+                if IsVector(destinationpos) then
+                    local colorToSend = enableColor:GetChecked() and colorPicker:GetColor() or Color(255, 198, 114, 254)
+                    net.Start("TVA_CreateDoor")
+                        net.WriteVector(destinationpos)
+                        net.WriteAngle(destinationang)
+                        net.WriteColor(colorToSend, false)
+                        net.WriteBool(glitchyCheck:GetChecked())
+                        net.WriteFloat(autocloseSlider:GetValue())
+                        net.WriteBool(autoCloseToggle:GetChecked())
+                        net.WritePlayer(LocalPlayer())
+                    net.SendToServer()
+                    frame:Close()
+                else
+                    chat.AddText(Color(248, 134, 30), "[Tempad] No destination set!")
+                end
             end
+
+            if cvars.Bool("tempad_do_cooldown") then
+
+                if not Charged then
+                    chat.AddText(Color(248, 134, 30), "[Tempad] Tempad is charging, please wait!")
+                    return
+                end
+                print(Charged)
+                Charged = false
+                CreateDoor()
+                print(Charged)
+                timer.Simple(ChargeTime, function() Charged = true chat.AddText(Color(248, 134, 30), "[Tempad] Tempad is fully charged!") end)
+                print(Charged)
+            else
+                CreateDoor()
+            end
+
         end
     end
 end
