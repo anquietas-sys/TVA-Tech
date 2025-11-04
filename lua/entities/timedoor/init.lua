@@ -192,7 +192,7 @@ function ENT:OnSmallPropPass(prop)
     end
 
     if CurTime() >= prop.TimeDoorCooldown then
-        prop.TimeDoorCooldown = CurTime() + 0.1
+        prop.TimeDoorCooldown = CurTime() + 0.5
         TeleportFunctions.Teleport(prop, self, self.Partner)
     end
 end
