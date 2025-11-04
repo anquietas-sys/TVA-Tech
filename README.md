@@ -25,9 +25,4 @@ This futuristic weapon is designed to violently rip your enemy from every thread
 It will destroy any living thing, including NPCs and Players, as well as any prop or entity.
 It will also destroy anything welded to a prop, allowing it to destroy entire contraptions.
 
-## COMING SOON
-
-### Reset Charge
-A similar technology to the time stick, but it instead wipes out an entire timeline. (Or in this case, everything in the map.)
-
 
