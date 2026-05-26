@@ -121,8 +121,10 @@ function ENT:Touch(ent)
 
     -- Think of the below like the 'difference' between the initial dot value and the current one.
     -- if the difference is above 1, run the teleport. 1 is the point that the dot values flip from positive to negative.
-    if (math.abs(dot-initialDot) >= 1) then
+    if initialDot then -- fixes the random nil error i think
+        if (math.abs(dot-initialDot) >= 1) then
         self:PrepareTeleport(ent)
+        end
     end
 end
 
