@@ -6,6 +6,7 @@ local childMaterial = Material("timedoor/timedoor_postrt")
 local aberrationMaterial = Material("timedoor/timedoor_aberration")
 local clearMaterial = Material("timedoor/timedoor_clearrt")
 
+
 local function NormalizeColor(color)
     local r = color.r / 255
     local g = color.g / 255
@@ -25,6 +26,8 @@ function ENT:Initialize()
         Decay = 512,
         Size = 128
     }
+    self.GlowBrightness = 1
+
 end
 
 function ENT:OnColorChanged(color)
@@ -51,6 +54,12 @@ function ENT:DrawBlurEffect()
         aberrationMaterial:SetFloat("$c1_x", 0.004 )
     end
     aberrationMaterial:SetTexture("$basetexture", blur_texture)
+
+    -- Glow brighter when opening and closing
+    self.TrueGlowBrightness = (math.EaseInOut(self.GlowBrightness, 0, 0.4) * 10 + 1)
+    aberrationMaterial:SetFloat("$c0_x", self.TrueGlowBrightness )
+    halo.Add({self}, self.LightColor, self.TrueGlowBrightness, self.TrueGlowBrightness, 2)
+
 
     render.PushRenderTarget(blur_texture)
         render.SetMaterial(aberrationMaterial)
@@ -165,6 +174,8 @@ end
 
 function ENT:Think()
     self:FrameAdvance()
+
+    self.GlowBrightness = math.Clamp(self.GlowBrightness + (self:GetNWBool("Open") and -1 or 1) * FrameTime() / 0.5, 0, 1)
 
     if self._IsPlayingOpenAnim then
         local cycle = self:GetCycle()
